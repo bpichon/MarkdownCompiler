@@ -2,24 +2,10 @@
 
 ## in der H2
 
--   erstes Bullet 
--   zweites Bullet
--   drittes Bullet
+ -   erstes Bullet
+ -   zweites Bullet
+      -   drittes Bullet
+          - kvkjb
 
-### noch H3
-
--   huhu
-    -   toll
-
-blabalabal - kein punkt
-########## und trotz vieler vieler Hashes "nur" H6
-
-Hier steht einfach
-nur Text.
-
-Und
-das 
-ist
-ein
-zweiter
-Paragraph.
+## alles
+ok

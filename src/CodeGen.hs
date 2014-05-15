@@ -15,9 +15,9 @@ generateHTML' (Sequence (a:as)) = generateHTML' a ++ "\n" ++ generateHTML' (Sequ
 -- eine Überschrift
 generateHTML' (H i str) = "<h" ++ show i ++ ">" ++ str ++ "</h" ++ show i ++ ">\n"
 -- eine ungeordnete Liste
-generateHTML' (UL lis) = "<ul>\n" ++ concat (map generateHTML' lis) ++ "</ul>\n"
+generateHTML' (UL level lis) = "<ul>\n" ++ concat (map generateHTML' lis) ++ "</ul>\n"
 -- Listenelemente
-generateHTML' (LI str) = "<li>" ++ str ++ "</li>\n"
+generateHTML' (LI level str) = "<li>" ++ str ++ "</li>\n"
 -- ein Absatz
 generateHTML' (P str)  = "<p>" ++ str ++ "</p>\n"
 -- alles andere (?) wird für den Moment ignoriert

@@ -13,10 +13,10 @@ parse (T_Newline:T_Newline:xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequen
 -- ein einzelnes Leerzeichen ignorieren wir (für den Moment?)
 parse (T_Newline:xs)           = parse xs
 -- einem Header muss ein Text folgen. Das ergibt zusammen einen Header im AST, er wird einer Sequenz hinzugefügt
-parse (T_H i : T_Text str: xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (H i str:ast)) $ parse xs
+parse (T_H i : T_SPACE s : T_Text str: xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (H i str:ast)) $ parse xs
 -- einem listitem-Marker muss auch ein Text folgen. Das gibt zusammen ein Listitem im AST.
 -- es wird mit der Hilfsfunktion addLI eingefügt
-parse (T_SPACE a: T_ULI: T_SPACE i: T_Text str: xs) = maybe Nothing (\ast -> Just $ addULI (LI str) ast) $ parse xs
+parse (T_SPACE a: T_ULI: T_SPACE i: T_Text str: xs) = maybe Nothing (\ast -> Just $ addULI (LI a str) ast) $ parse xs
 
 
 
@@ -32,9 +32,14 @@ parse _ = Just $ Sequence []
 -- Einfügen eines Listenelements in eine ungeordnete Liste
 addULI :: AST -> AST -> AST
 -- Wenn wir ein Listenelement einfügen wollen und im Rest schon eine UL haben, fügen wir das Element in die UL ein
-addULI (LI l str) (Sequence (UL level lis : ast)) = Sequence (UL level (li:lis) : ast)
--- Andernfalls erzeugen wir eine neue UL.
-addULI li (Sequence ast) = Sequence (UL [li] : ast)
+addULI (LI itemLevel str) (Sequence (UL listLevel lis : ast))
+    | (itemLevel == listLevel)  = Sequence (UL listLevel ((LI itemLevel str):lis) : ast)
+    | (itemLevel < listLevel)   = Sequence (UL listLevel [(LI itemLevel str)] : ast)
+    | itemLevel > listLevel    = Sequence (UL listLevel ((UL itemLevel [(LI itemLevel str)]):lis):ast)
+{- = Sequence ((UL itemLevel [(LI itemLevel str)]):ast)-}
+
+addULI (LI itemLevel str) (Sequence ast) = 
+    Sequence ((UL itemLevel [(LI itemLevel str)]):ast)
 
 -- Mehrere aufeinander folgende Texte werden zu einem Absatz zusammengefügt.
 addP :: AST -> AST -> AST
