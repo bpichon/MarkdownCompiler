@@ -16,7 +16,10 @@ parse (T_Newline:xs)           = parse xs
 parse (T_H i : T_Text str: xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (H i str:ast)) $ parse xs
 -- einem listitem-Marker muss auch ein Text folgen. Das gibt zusammen ein Listitem im AST.
 -- es wird mit der Hilfsfunktion addLI eingefügt
-parse (T_ULI i: T_Text str: xs) = maybe Nothing (\ast -> Just $ addULI (LI str) ast) $ parse xs
+parse (T_SPACE a: T_ULI: T_SPACE i: T_Text str: xs) = maybe Nothing (\ast -> Just $ addULI (LI str) ast) $ parse xs
+
+
+
 -- ein Text am Anfang gehört in einen Absatz. Damit direkt auf einander folgende Texte in einem gemeinsamen
 -- Absatz landen, wird die Hilfsfunktion addP genutzt um den Text einzufügen
 parse (T_Text str: xs)         = maybe Nothing (\ast -> Just $ addP (P str) ast) $ parse xs
@@ -29,7 +32,7 @@ parse _ = Just $ Sequence []
 -- Einfügen eines Listenelements in eine ungeordnete Liste
 addULI :: AST -> AST -> AST
 -- Wenn wir ein Listenelement einfügen wollen und im Rest schon eine UL haben, fügen wir das Element in die UL ein
-addULI li (Sequence (UL lis : ast)) = Sequence (UL (li:lis) : ast)
+addULI (LI l str) (Sequence (UL level lis : ast)) = Sequence (UL level (li:lis) : ast)
 -- Andernfalls erzeugen wir eine neue UL.
 addULI li (Sequence ast) = Sequence (UL [li] : ast)
 
