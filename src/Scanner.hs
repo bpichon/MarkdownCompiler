@@ -10,6 +10,8 @@ data MDToken = T_Newline     -- '\n'
              | T_POINT     -- ein geordnetes Listenelement Marker mit einrückungsebene.
              | T_INT Int     -- Zahl nach token
              | T_SPACE Int
+             | T_ITALIC
+             | T_BOLD
     deriving (Show, Eq)
 
 scan :: String -> Maybe [MDToken]
@@ -22,6 +24,10 @@ scan str@('#':xs) =
         -- Anzahl der Hashes ergibt das Level, aber höchstens 6 werden gezählt, der Rest ignoriert
         level = min (length hashes) 6
     in maybe Nothing (\tokens -> Just (T_H level:tokens))      $ scan rest
+
+scan str@('*':'*':xs) = maybe Nothing (\tokens -> Just (T_BOLD:tokens))      $ scan xs
+
+scan str@('*':xs) = maybe Nothing (\tokens -> Just (T_ITALIC:tokens))      $ scan xs
 -- Zeilenumbrüche aufheben um im Parser Leerzeilen zu erkennen
 scan ('\n':xs)    = maybe Nothing (\tokens -> Just (T_Newline:tokens)) $ scan xs
 
