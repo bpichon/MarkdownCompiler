@@ -16,7 +16,7 @@ parse (T_Newline:xs)           = parse xs
 parse (T_H i : T_SPACE s : T_Text str: xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (H i str:ast)) $ parse xs
 -- einem listitem-Marker muss auch ein Text folgen. Das gibt zusammen ein Listitem im AST.
 -- es wird mit der Hilfsfunktion addLI eingefügt
-parse (T_SPACE a: T_ULI: T_SPACE i: T_Text str: xs) = maybe Nothing (\ast -> Just $ addULI (LI a str) ast) $ parse xs
+parse (T_SPACE a: T_ULI: T_SPACE i: T_Text str: xs) = maybe Nothing (\ast -> Just $ addULI (LI a (str++"[iLevel: "++show(a)++"]")) ast) $ parse xs
 
 
 
@@ -33,9 +33,10 @@ parse _ = Just $ Sequence []
 addULI :: AST -> AST -> AST
 -- Wenn wir ein Listenelement einfügen wollen und im Rest schon eine UL haben, fügen wir das Element in die UL ein
 addULI (LI itemLevel str) (Sequence (UL listLevel lis : ast))
-    | (itemLevel == listLevel)  = Sequence (UL listLevel ((LI itemLevel str):lis) : ast)
-    | (itemLevel < listLevel)   = Sequence (UL listLevel [(LI itemLevel str)] : ast)
-    | itemLevel > listLevel    = Sequence (UL listLevel ((UL itemLevel [(LI itemLevel str)]):lis):ast)
+    | (itemLevel == listLevel)  = Sequence (UL listLevel ((LI itemLevel str):lis) : ast) -- in diese Liste als letztes Element
+    | (itemLevel < listLevel)   = Sequence (UL listLevel ((LI itemLevel (str++" [listLev:"++show(listLevel)++"]")):lis) : ast) -- eine ebene raus
+    {-| (itemLevel < listLevel)   = Sequence (UL listLevel [(LI itemLevel ("iLevel: "++show(itemLevel)++" listLevel: "++show(listLevel)))] : ast) -- eine ebene raus-}
+    | itemLevel > listLevel    = Sequence (UL listLevel ((UL itemLevel [(LI itemLevel "str")]):lis):ast) -- neue Liste (mit neuem Item) in die Liste
 {- = Sequence ((UL itemLevel [(LI itemLevel str)]):ast)-}
 
 addULI (LI itemLevel str) (Sequence ast) = 
