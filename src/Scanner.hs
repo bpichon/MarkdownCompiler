@@ -6,7 +6,7 @@ data MDToken = T_Newline     -- '\n'
              | T_H Int       -- ein Header mit der Anzahl der Hashes
              | T_Text String -- Text, aber immer nur bis zum Zeilenende, Text über mehrere Zeilen muss vom Parser zusammengesetzt werden
              | T_ULI     -- ein ungeordnetes Listenelement-Marker mit der (Einrückungs-)Ebene
-             | T_POINT     -- ein geordnetes Listenelement Marker mit einrückungsebene.
+             | T_OLI     -- ein geordnetes Listenelement Marker mit einrückungsebene.
              | T_INT Int     -- Zahl nach token
              | T_SPACE Int
              | T_ITALIC
@@ -41,8 +41,6 @@ scan str@(' ':xs) =
 -- TODO: noch sind wir sicher am Zeilenanfang, aber nicht mehr unbedingt, wenn wir weitere Fälle einbauen (Links etc.)
 scan ('-':xs)     = maybe Nothing (\tokens -> Just (T_ULI:tokens))    $ scan xs
 
--- punkt für Geordnete Liste
-scan ('.':xs)     = maybe Nothing (\tokens -> Just (T_POINT:tokens))    $ scan xs
 
 -- sonst lesen wir einfach den Rest bis zum Zeilenende in ein Text-Token ein
 
@@ -50,7 +48,7 @@ scan ('.':xs)     = maybe Nothing (\tokens -> Just (T_POINT:tokens))    $ scan x
 scan str@(x:xs)
     | isDigit x = let (digits, rest) = span isDigit str
                    in   if (pointFinder rest )
-                            then do maybe Nothing (\tokens -> Just (T_INT (read digits):tokens))(scan xs) --Punkt nach Zahl wird gefunde
+                            then do maybe Nothing (\tokens -> Just (T_OLI :tokens))(scan xs) --geordnete Liste
                             else do maybe Nothing (\tokens -> Just (T_Text digits:tokens)) $ scan rest 
     | otherwise = let (restOfLine, restOfStr) = span (/='\n') str
           in maybe Nothing (\tokens -> Just (T_Text restOfLine:tokens)) $ scan restOfStr
