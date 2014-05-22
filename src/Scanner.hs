@@ -1,7 +1,6 @@
 module Scanner where
 
 import Data.Char (isDigit)
-
 -- MD: Markdown
 data MDToken = T_Newline     -- '\n' 
              | T_H Int       -- ein Header mit der Anzahl der Hashes
@@ -33,9 +32,9 @@ scan ('\n':xs)    = maybe Nothing (\tokens -> Just (T_Newline:tokens)) $ scan xs
 
 scan str@(' ':xs) =
         -- String aufteilen in Hashes und Rest
-    let (hashes, rest) = span (==' ') str
-        -- Anzahl der Hashes ergibt das Level, aber höchstens 6 werden gezählt, der Rest ignoriert
-        level = (length hashes) `div` 4
+    let (spaces, rest) = span (==' ') str
+        -- Anzahl der Leerzeichen ergibt das Level
+        level = (length spaces) `div` 4
     in maybe Nothing (\tokens -> Just (T_SPACE level:tokens))      $ scan rest
 
 -- wenn das '-' am Zeilenanfang gelesen wird, ist es Level 0
@@ -50,8 +49,11 @@ scan ('.':xs)     = maybe Nothing (\tokens -> Just (T_POINT:tokens))    $ scan x
 -- Wenn eine Zahl am anfang steht
 scan str@(x:xs)
     | isDigit x = let (digits, rest) = span isDigit str
-                  in maybe Nothing (\tokens -> Just (T_INT (read digits):tokens))(scan xs)
+                   in   if (pointFinder rest )
+                            then do maybe Nothing (\tokens -> Just (T_INT (read digits):tokens))(scan xs) --Punkt nach Zahl wird gefunde
+                            else do maybe Nothing (\tokens -> Just (T_Text digits:tokens)) $ scan rest 
     | otherwise = let (restOfLine, restOfStr) = span (/='\n') str
           in maybe Nothing (\tokens -> Just (T_Text restOfLine:tokens)) $ scan restOfStr
-
-
+pointFinder :: [Char]->Bool
+pointFinder ('.':xs) = True
+pointFinder xs= False
