@@ -6,7 +6,7 @@ data MDToken = T_Newline     -- '\n'
              | T_H Int       -- ein Header mit der Anzahl der Hashes
              | T_Text String -- Text, aber immer nur bis zum Zeilenende, Text über mehrere Zeilen muss vom Parser zusammengesetzt werden
              | T_ULI     -- ein ungeordnetes Listenelement-Marker mit der (Einrückungs-)Ebene
-             | T_OLI     -- ein geordnetes Listenelement Marker mit einrückungsebene.
+             | T_OLI   -- ein geordnetes Listenelement Marker mit einrückungsebene.
              | T_INT Int     -- Zahl nach token
              | T_SPACE Int
              | T_ITALIC
@@ -48,7 +48,7 @@ scan ('-':xs)     = maybe Nothing (\tokens -> Just (T_ULI:tokens))    $ scan xs
 scan str@(x:xs)
     | isDigit x = let (digits, rest) = span isDigit str
                    in   if (pointFinder rest )
-                            then do maybe Nothing (\tokens -> Just (T_OLI :tokens))(scan xs) --geordnete Liste
+                            then do maybe Nothing (\tokens -> Just (T_OLI  :tokens))(scan xs) --geordnete Liste
                             else do maybe Nothing (\tokens -> Just (T_Text digits:tokens)) $ scan rest 
     | otherwise = let (restOfLine, restOfStr) = span (/='\n') str
           in maybe Nothing (\tokens -> Just (T_Text restOfLine:tokens)) $ scan restOfStr
