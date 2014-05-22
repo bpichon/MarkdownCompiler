@@ -55,5 +55,5 @@ scan str@(x:xs)
     | otherwise = let (restOfLine, restOfStr) = span (/='\n') str
           in maybe Nothing (\tokens -> Just (T_Text restOfLine:tokens)) $ scan restOfStr
 pointFinder :: [Char]->Bool
-pointFinder ('.':xs) = True
+pointFinder ('.':' ':xs) = True
 pointFinder xs= False
