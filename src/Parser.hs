@@ -32,10 +32,11 @@ parse _ = Just $ Sequence []
 -- Einfügen eines Listenelements in eine ungeordnete Liste
 addULI :: AST -> AST -> AST
 -- Wenn wir ein Listenelement einfügen wollen und im Rest schon eine UL haben, fügen wir das Element in die UL ein
-addULI (LI itemLevel str) (Sequence (UL listLevel lis : ast))
-    | (itemLevel == listLevel)  = Sequence (UL listLevel ((LI itemLevel str):lis) : ast)
-    | (itemLevel < listLevel)   = Sequence (UL listLevel [(LI itemLevel str)] : ast)
-    | itemLevel > listLevel    = Sequence (UL listLevel ((UL itemLevel [(LI itemLevel str)]):lis):ast)
+addULI li@(LI itemLevel str) (Sequence (ul@(UL listLevel lis) : ast))
+    | (itemLevel == listLevel)  = Sequence (UL listLevel ((LI itemLevel str):lis) : ast) -- in diese Liste als letztes Element
+    | (itemLevel < listLevel)   = Sequence (UL itemLevel [li,ul] : ast) -- eine ebene raus
+    {-| (itemLevel < listLevel)   = Sequence (UL listLevel [(LI itemLevel ("iLevel: "++show(itemLevel)++" listLevel: "++show(listLevel)))] : ast) -- eine ebene raus-}
+    | itemLevel > listLevel    = Sequence (UL listLevel ((UL itemLevel [(LI itemLevel "str")]):lis):ast) -- neue Liste (mit neuem Item) in die Liste
 {- = Sequence ((UL itemLevel [(LI itemLevel str)]):ast)-}
 
 addULI (LI itemLevel str) (Sequence ast) = 
