@@ -5,8 +5,8 @@ import Data.Char (isDigit)
 data MDToken = T_Newline     -- '\n' 
              | T_H Int       -- ein Header mit der Anzahl der Hashes
              | T_Text String -- Text, aber immer nur bis zum Zeilenende, Text über mehrere Zeilen muss vom Parser zusammengesetzt werden
-             | T_ULI     -- ein ungeordnetes Listenelement-Marker mit der (Einrückungs-)Ebene
-             | T_OLI   -- ein geordnetes Listenelement Marker mit einrückungsebene.
+             | T_ULI    -- ein ungeordnetes Listenelement-Marker mit der (Einrückungs-)Ebene
+             | T_OLI   -- ein geordnetes Listenelement Marker mit einrückungsebene
              | T_INT Int     -- Zahl nach token
              | T_SPACE Int
              | T_ITALIC

@@ -17,14 +17,14 @@ generateHTML' (H i str) = "<h" ++ show i ++ ">" ++ str ++ "</h" ++ show i ++ ">\
 -- eine ungeordnete Liste
 generateHTML' (UL level lis) = "<ul>\n" ++ concat (map generateHTML' lis) ++ "</ul>\n"
 -- eine geordnete Liste
-generateHTML' (OL level lis) = "<ul>\n" ++ (helper lis 1) ++ "</ul>\n"
+generateHTML' (OL level lis) = "<ol>\n" ++ concat (map generateHTML' lis) ++ "</ol>\n"
 -- Listenelemente
-generateHTML' (LI level str) = "<li>" ++ str ++ "</li>\n"
+generateHTML' (LI level str ) = "<li>"  ++ str ++ "</li>\n"
 -- ein Absatz
 generateHTML' (P str)  = "<p>" ++ str ++ "</p>\n"
 -- alles andere (?) wird für den Moment ignoriert
 generateHTML' _ = ""
 
-helper (LI level str:xs) count= "<li>"++show(count)++". " ++ str ++ "</li>\n" ++ helper xs (count+1)
-helper [] count = ""
-helper _  _ = ""
+--helper (LI level str:xs) count= "<li>"++show(count)++ str ++ "</li>\n" ++ helper xs (count+1)
+--helper [] count = ""
+--helper _  _ = ""
