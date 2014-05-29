@@ -25,6 +25,3 @@ generateHTML' (P str)  = "<p>" ++ str ++ "</p>\n"
 -- alles andere (?) wird für den Moment ignoriert
 generateHTML' _ = ""
 
---helper (LI level str:xs) count= "<li>"++show(count)++ str ++ "</li>\n" ++ helper xs (count+1)
---helper [] count = ""
---helper _  _ = ""

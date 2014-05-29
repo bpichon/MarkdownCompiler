@@ -40,6 +40,7 @@ scan str@(' ':xs) =
 -- wenn das '-' am Zeilenanfang gelesen wird, ist es Level 0
 -- TODO: noch sind wir sicher am Zeilenanfang, aber nicht mehr unbedingt, wenn wir weitere Fälle einbauen (Links etc.)
 scan ('-':xs)     = maybe Nothing (\tokens -> Just (T_ULI:tokens))    $ scan xs
+scan ('+':xs)     = maybe Nothing (\tokens -> Just (T_ULI:tokens))    $ scan xs
 
 
 -- sonst lesen wir einfach den Rest bis zum Zeilenende in ein Text-Token ein
@@ -47,8 +48,9 @@ scan ('-':xs)     = maybe Nothing (\tokens -> Just (T_ULI:tokens))    $ scan xs
 -- Wenn eine Zahl am anfang steht
 scan str@(x:xs)
     | isDigit x = let (digits, rest) = span isDigit str
+                   
                    in   if (pointFinder rest )
-                            then do maybe Nothing (\tokens -> Just (T_OLI  :tokens))(scan xs) --geordnete Liste
+                            then do maybe Nothing (\tokens -> Just (T_OLI  :tokens))(scan   rest) --geordnete Liste
                             else do maybe Nothing (\tokens -> Just (T_Text digits:tokens)) $ scan rest 
     | otherwise = let (restOfLine, restOfStr) = span (/='\n') str
           in maybe Nothing (\tokens -> Just (T_Text restOfLine:tokens)) $ scan restOfStr
