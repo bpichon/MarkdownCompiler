@@ -24,14 +24,11 @@ scan str@('#':xs) =
         level = min (length hashes) 6
     in maybe Nothing (\tokens -> Just (T_H level:tokens))      $ scan rest
 
-scan str@('*':'*':xs) = maybe Nothing (\tokens -> Just (T_BOLD:tokens))      $ scan xs
-
-scan str@('*':xs) = maybe Nothing (\tokens -> Just (T_ITALIC:tokens))      $ scan xs
 -- Zeilenumbrüche aufheben um im Parser Leerzeilen zu erkennen
 scan ('\n':xs)    = maybe Nothing (\tokens -> Just (T_Newline:tokens)) $ scan xs
 
 scan str@(' ':xs) =
-        -- String aufteilen in Hashes und Rest
+        -- String aufteilen in Spaces und Rest
     let (spaces, rest) = span (==' ') str
         -- Anzahl der Leerzeichen ergibt das Level
         level = (length spaces) `div` 4
@@ -47,13 +44,20 @@ scan ('+':xs)     = maybe Nothing (\tokens -> Just (T_ULI:tokens))    $ scan xs
 
 -- Wenn eine Zahl am anfang steht
 scan str@(x:xs)
-    | isDigit x = let (digits, rest) = span isDigit str
+    | isDigit x = let (digits, rest@(a:tail)) = span isDigit str
                    
-                   in   if (pointFinder rest )
-                            then do maybe Nothing (\tokens -> Just (T_OLI  :tokens))(scan   rest) --geordnete Liste
+                   in   if (a=='.' )
+                            then do maybe Nothing (\tokens -> Just (T_OLI  :tokens))(scan rest) --geordnete Liste
                             else do maybe Nothing (\tokens -> Just (T_Text digits:tokens)) $ scan rest 
     | otherwise = let (restOfLine, restOfStr) = span (/='\n') str
-          in maybe Nothing (\tokens -> Just (T_Text restOfLine:tokens)) $ scan restOfStr
-pointFinder :: [Char]->Bool
-pointFinder ('.':' ':xs) = True
-pointFinder xs= False
+          in maybe Nothing (\tokens -> Just((textScan "" restOfLine)++tokens)) $ scan restOfStr
+
+          
+--Scannt den Text nach Sonderzeichen         
+textScan :: String ->String -> [MDToken]
+textScan text ""  |   text == "" = []
+                  |  otherwise  =[T_Text text]
+textScan text str@('*':'*':xs) =  (\tokens -> (T_Text text:T_BOLD:tokens))  $ textScan ""  xs
+textScan text str@('*':xs) =   (\tokens ->  (T_Text text:T_ITALIC:tokens))      $ textScan "" xs
+textScan text (x:xs) = textScan (text++x:[]) xs
+
