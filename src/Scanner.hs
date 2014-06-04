@@ -11,6 +11,7 @@ data MDToken = T_Newline     -- '\n'
              | T_SPACE Int
              | T_ITALIC
              | T_BOLD
+             | T_SLASH
     deriving (Show, Eq)
 
 scan :: String -> Maybe [MDToken]
@@ -44,10 +45,10 @@ scan ('+':xs)     = maybe Nothing (\tokens -> Just (T_ULI:tokens))    $ scan xs
 
 -- Wenn eine Zahl am anfang steht
 scan str@(x:xs)
-    | isDigit x = let (digits, rest@(a:tail)) = span isDigit str
+    | isDigit x = let (digits, rest@(a:b:tail)) = span isDigit str
                    
-                   in   if (a=='.' )
-                            then do maybe Nothing (\tokens -> Just (T_OLI  :tokens))(scan rest) --geordnete Liste
+                   in   if (a:b:[]==". " )
+                            then do maybe Nothing (\tokens -> Just (T_OLI  :tokens))(scan tail) --geordnete Liste
                             else do maybe Nothing (\tokens -> Just (T_Text digits:tokens)) $ scan rest 
     | otherwise = let (restOfLine, restOfStr) = span (/='\n') str
           in maybe Nothing (\tokens -> Just((textScan "" restOfLine)++tokens)) $ scan restOfStr
@@ -57,7 +58,9 @@ scan str@(x:xs)
 textScan :: String ->String -> [MDToken]
 textScan text ""  |   text == "" = []
                   |  otherwise  =[T_Text text]
-textScan text str@('*':'*':xs) =  (\tokens -> (T_Text text:T_BOLD:tokens))  $ textScan ""  xs
-textScan text str@('*':xs) =   (\tokens ->  (T_Text text:T_ITALIC:tokens))      $ textScan "" xs
+textScan text str@('*':'*':xs) =  (\tokens -> ((textScan text "")++T_BOLD:tokens))  $ textScan ""  xs
+textScan text str@('*':xs) =   (\tokens ->  ((textScan text "")++T_ITALIC:tokens))      $ textScan "" xs
+textScan text str@('\\':xs) =   (\tokens ->  ((textScan text "")++T_SLASH:tokens))      $ textScan "" xs
 textScan text (x:xs) = textScan (text++x:[]) xs
+
 

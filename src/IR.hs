@@ -6,6 +6,9 @@ data AST = Sequence [AST] -- eine Sequenz von HTML-Elementen
          | UL Int [AST]       -- eine ungeordnete Liste, in der Liste müssen dann die Listenelemente stehen
          | OL Int [AST] -- eine geordnete Liste
          | LI Int [Char]      -- ein Listenelement mit dem Inhalt 
-         | P String       -- ein Absatz mit dem Inhalt
+         | P [AST]       -- ein Absatz mit dem Inhalt
          | EmptyLine      -- eine leere Zeile
+         | Te [Char]
+         | FT [Char]
+         | NL
     deriving (Show)

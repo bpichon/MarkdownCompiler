@@ -10,7 +10,7 @@ parse :: [MDToken] -> Maybe AST
 parse []                       = Just $ Sequence []
 -- Zwei Zeilenumbrüche hintereinander sind eine leere Zeile, die in eine Sequenz eingeführt wird (wirklich immer?)
 parse (T_Newline:T_Newline:xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (EmptyLine : ast)) $ parse xs
--- ein einzelnes Leerzeichen ignorieren wir (für den Moment?)
+--depraciated
 parse (T_Newline:xs)           = parse xs
 -- einem Header muss ein Text folgen. Das ergibt zusammen einen Header im AST, er wird einer Sequenz hinzugefügt
 parse (T_H i : T_SPACE s : T_Text str: xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (H i str:ast)) $ parse xs
@@ -18,16 +18,27 @@ parse (T_H i : T_SPACE s : T_Text str: xs) = maybe Nothing (\(Sequence ast) -> J
 -- es wird mit der Hilfsfunktion addLI eingefügt
 parse (T_SPACE a: T_OLI : T_Text str: xs) = maybe Nothing (\ast -> Just $ addOLI (LI a str ) ast) $ parse xs
 parse (T_SPACE a: T_ULI : T_SPACE i: T_Text str: xs) = maybe Nothing (\ast -> Just $ addULI (LI a str ) ast) $ parse xs
+--parse (T_BOLD:T_Text str:T_BOLD:xs)= maybe Nothing (\ast -> Just $ addP (P (FT str:[])) ast) $ parse xs
+parse xs   = maybe Nothing (\ast -> Just $ addP (P $fst(textParse [] xs)) ast) $ parse $snd(textParse [] xs)
+--parse _ = Just $ Sequence []
 
 
+textParse text (T_Text s:xs)= textParse (text++[Te s]) xs
+textParse text (T_BOLD:T_Text str:T_BOLD:xs)= textParse (text++[FT str]) xs
+textParse text l@(T_Newline:T_Newline:xs)= (text,l)
+textParse text (T_Newline:xs)= (text++[NL],xs)
+textParse text (T_SPACE a:xs)= (text++[Te " "],xs)
 
 
--- ein Text am Anfang gehört in einen Absatz. Damit direkt auf einander folgende Texte in einem gemeinsamen
--- Absatz landen, wird die Hilfsfunktion addP genutzt um den Text einzufügen
-parse (T_Text str: xs)         = maybe Nothing (\ast -> Just $ addP (P str) ast) $ parse xs
+textParse text [] = (text,[])
+
+textParseErg str rest = (str,rest)
+
 -- Der gesamte Rest wird für den Moment ignoriert. Achtung: Der Parser schlägt, in der momentanen Implementierung, nie fehl.
 -- Das kann in der Endfassung natürlich nicht so bleiben!
-parse _ = Just $ Sequence []
+
+
+
 
 -- Hilfsfunktionen für den Parser
 
@@ -65,9 +76,13 @@ addOLI li@(LI itemLevel str ) (Sequence (ul@(UL listLevel lis) : ast))
 addOLI (LI itemLevel str ) (Sequence ast) = 
     Sequence ((OL itemLevel [(LI itemLevel str )]):ast)
 
+    
+
+
+    
 -- Mehrere aufeinander folgende Texte werden zu einem Absatz zusammengefügt.
 addP :: AST -> AST -> AST
 -- Wenn wir zwei Absätze hintereinander finden, fassen wir diese zusammen 
-addP (P str1) (Sequence (P str2 : ast)) = Sequence (P (str1 ++ "\n" ++ str2) : ast)
+addP (P seq1) (Sequence (P seq2 : ast)) = Sequence (P (seq1++seq2) : ast)
 -- Andernfalls bleibt der Absatz alleine
 addP p (Sequence ast) = Sequence (p : ast)
