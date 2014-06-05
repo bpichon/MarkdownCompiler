@@ -15,11 +15,10 @@ generateHTML' (Sequence (a:as)) = generateHTML' a ++ "\n" ++ generateHTML' (Sequ
 -- eine Überschrift
 generateHTML' (H i str) = "<h" ++ show i ++ ">" ++ str ++ "</h" ++ show i ++ ">\n"
 -- eine ungeordnete Liste
-generateHTML' (UL level lis) = "<ul>\n" ++ concat (map generateHTML' lis) ++ "</ul>\n"
+generateHTML' (UL level lis) = "<ul>\n" ++ concat (map (\str ->"<li>" ++ str++"</li>\n") (map generateHTML' lis) )++ "</ul>\n"
 -- eine geordnete Liste
-generateHTML' (OL level lis) = "<ol>\n" ++ concat (map generateHTML' lis) ++ "</ol>\n"
+generateHTML' (OL level lis) = "<ol>\n" ++ concat (map (\str ->"<li>" ++ str++"</li>\n") (map generateHTML' lis) )++ "</ol>\n"
 -- Listenelemente
-generateHTML' (LI level str ) = "<li>"  ++ str ++ "</li>\n"
 -- ein Absatz
 generateHTML' (P str)  = "<p>" ++ concat (map generateHTML' str)  ++ "</p>\n"
 -- alles andere (?) wird für den Moment ignoriert

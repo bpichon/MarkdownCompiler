@@ -20,14 +20,19 @@ parse (T_Newline:xs)           = parse xs
 parse (T_H i : T_SPACE s : T_Text str: xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (H i str:ast)) $ parse xs
 -- einem listitem-Marker muss auch ein Text folgen. Das gibt zusammen ein Listitem im AST.
 -- es wird mit der Hilfsfunktion addLI eingefügt
-parse (T_SPACE a: T_OLI : T_Text str: xs) = maybe Nothing (\ast -> Just $ addOLI (LI a str ) ast) $ parse xs
-parse (T_SPACE a: T_ULI : T_SPACE i: T_Text str: xs) = maybe Nothing (\ast -> Just $ addULI (LI a str ) ast) $ parse xs
---parse (T_BOLD:T_Text str:T_BOLD:xs)= maybe Nothing (\ast -> Just $ addP (P (FT str:[])) ast) $ parse xs
+parse (T_SPACE a: T_OLI : xs) = let (elem, rest)= textParse [] xs
+                                    withoutNL = filter isNewLine elem
+                                in  maybe Nothing (\ast -> Just $ addOLI  withoutNL ast a) $ parse rest
+parse (T_SPACE a: T_ULI : T_SPACE i: xs) = let (elem, rest)= textParse [] xs   
+                                               withoutNL = filter isNewLine elem
+                                           in  maybe Nothing (\ast -> Just $ addULI  withoutNL ast a) $ parse rest
+                            
 parse xs   = maybe Nothing (\ast -> Just $ addP (P $fst(textParse [] xs)) ast) $ parse $snd(textParse [] xs)
 --parse _ = Just $ Sequence []
 
 
-
+isNewLine NL = False
+isNewLine _ = True
 
 textParse text (T_Text s:xs)= textParse (text++[Te s]) xs
 textParse text (T_BOLD:T_Text str:T_BOLD:xs)= textParse (text++[FT str]) xs
@@ -38,7 +43,7 @@ textParse text (T_SPACE a:xs)= (text++[Te " "],xs)
 
 textParse text [] = (text,[])
 
-textParseErg str rest = (str,rest)
+
 
 -- Der gesamte Rest wird für den Moment ignoriert. Achtung: Der Parser schlägt, in der momentanen Implementierung, nie fehl.
 -- Das kann in der Endfassung natürlich nicht so bleiben!
@@ -49,38 +54,35 @@ textParseErg str rest = (str,rest)
 -- Hilfsfunktionen für den Parser
 
 -- Einfügen eines Listenelements in eine ungeordnete Liste
-addULI :: AST -> AST -> AST
+addULI :: [AST] -> AST->Int -> AST
 -- Wenn wir ein Listenelement einfügen wollen und im Rest schon eine UL haben, fügen wir das Element in die UL ein
-addULI li@(LI itemLevel str ) (Sequence (ul@(UL listLevel lis@(levl)) : ast))
-    | (itemLevel == listLevel)  = Sequence (UL listLevel ((LI itemLevel str ):lis) : ast) -- in diese Liste als letztes Element
-    | (itemLevel < listLevel)   = Sequence (UL itemLevel [li,ul] : ast) -- eine ebene raus
-    {-| (itemLevel < listLevel)   = Sequence (UL listLevel [(LI itemLevel ("iLevel: "++show(itemLevel)++" listLevel: "++show(listLevel)))] : ast) -- eine ebene raus-}
-    | itemLevel > listLevel    = Sequence (UL listLevel ((UL itemLevel [(LI itemLevel str )]):lis):ast) -- neue Liste (mit neuem Item) in die Liste
-{- = Sequence ((UL itemLevel [(LI itemLevel str)]):ast)-}
+addULI content (Sequence (ul@(UL listLevel lis@(levl)) : ast)) itemLevel
+    | (itemLevel == listLevel)  = Sequence (UL listLevel (content++lis) : ast) -- in diese Liste als letztes Element
+    | (itemLevel < listLevel)   = Sequence ((UL itemLevel (content++[ul] )):ast) -- eine ebene raus
+    | itemLevel > listLevel    = Sequence (UL listLevel ((UL itemLevel content):lis):ast)  -- neue Liste (mit neuem Item) in die Liste
 
-addULI li@(LI itemLevel str ) (Sequence (ul@(OL listLevel lis@(levl)) : ast))
-    | (itemLevel == listLevel)  = Sequence (UL listLevel ((LI itemLevel str ):lis) : ast) -- in diese Liste als letztes Element
-    | (itemLevel < listLevel)   = Sequence (UL itemLevel [li,ul] : ast) -- eine ebene raus
-    | itemLevel > listLevel    = Sequence (UL listLevel ((UL itemLevel [(LI itemLevel str )]):lis):ast) -- neue Liste (mit neuem Item) in die Liste
-
-addULI (LI itemLevel str ) (Sequence ast) = 
-    Sequence ((UL itemLevel [(LI itemLevel str )]):ast)
+addULI content (Sequence (ul@(OL listLevel lis@(levl)) : ast)) itemLevel
+    |(itemLevel == listLevel)  = Sequence (UL listLevel (content++lis) : ast) -- in diese Liste als letztes Element
+    | (itemLevel < listLevel)   = Sequence ((UL itemLevel (content++[ul] )):ast) -- eine ebene raus
+    | itemLevel > listLevel    = Sequence (UL listLevel ((UL itemLevel content):lis):ast)  -- neue Liste (mit neuem Item) in die Liste
+addULI content (Sequence ast)  itemLevel=  Sequence ((UL itemLevel content):ast)
 
 
-addOLI :: AST -> AST -> AST
+addOLI :: [AST] -> AST->Int -> AST
 -- Wenn wir ein Listenelement einfügen wollen und im Rest schon eine UL haben, fügen wir das Element in die UL ein
-addOLI li@(LI itemLevel str ) (Sequence (ul@(OL listLevel lis) : ast))
-    | (itemLevel == listLevel)  = Sequence (OL listLevel ((LI itemLevel str ):lis) : ast) -- in diese Liste als letztes Element
-    | (itemLevel < listLevel)   = Sequence (OL itemLevel [li,ul] : ast) -- eine ebene raus
-    | itemLevel > listLevel    = Sequence (OL listLevel ((OL itemLevel [(LI itemLevel str )]):lis):ast) -- neue Liste (mit neuem Item) in die Liste
-addOLI li@(LI itemLevel str ) (Sequence (ul@(UL listLevel lis) : ast))
-    | (itemLevel == listLevel)  = Sequence (OL listLevel ((LI itemLevel str ):lis) : ast) -- in diese Liste als letztes Element
-    | (itemLevel < listLevel)   = Sequence (OL itemLevel [li,ul] : ast) -- eine ebene raus
-    | itemLevel > listLevel    = Sequence (OL listLevel ((OL itemLevel [(LI itemLevel str )]):lis):ast) -- neue Liste (mit neuem Item) in die Liste
+addOLI content (Sequence (ul@(OL listLevel lis@(levl)) : ast)) itemLevel
+    | (itemLevel == listLevel)  = Sequence (OL listLevel (content++lis) : ast) -- in diese Liste als letztes Element
+    | (itemLevel < listLevel)   = Sequence ((OL itemLevel (content++[ul] )):ast) -- eine ebene raus
+    | itemLevel > listLevel    = Sequence (OL listLevel ((OL itemLevel content):lis):ast)  -- neue Liste (mit neuem Item) in die Liste
+
+addOLI content (Sequence (ul@(UL listLevel lis@(levl)) : ast)) itemLevel
+    |(itemLevel == listLevel)  = Sequence (OL listLevel (content++lis) : ast) -- in diese Liste als letztes Element
+    | (itemLevel < listLevel)   = Sequence ((OL itemLevel (content++[ul] )):ast) -- eine ebene raus
+    | itemLevel > listLevel    = Sequence (OL listLevel ((OL itemLevel content):lis):ast)  -- neue Liste (mit neuem Item) in die Liste
+addOLI content (Sequence ast)  itemLevel=  Sequence ((OL itemLevel content):ast)
 
 
-addOLI (LI itemLevel str ) (Sequence ast) = 
-    Sequence ((OL itemLevel [(LI itemLevel str )]):ast)
+
 
     
 
