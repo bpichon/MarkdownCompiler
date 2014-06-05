@@ -8,6 +8,10 @@ import           Scanner
 parse :: [MDToken] -> Maybe AST
 -- Die leere Liste ergibt eine leere Sequenz
 parse []                       = Just $ Sequence []
+
+-- Escape Fälle: *,+,-,**
+parse (T_SLASH: T_ITALIC: xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (ast)) $ parse (T_Text "*":xs)
+
 -- Zwei Zeilenumbrüche hintereinander sind eine leere Zeile, die in eine Sequenz eingeführt wird (wirklich immer?)
 parse (T_Newline:T_Newline:xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (EmptyLine : ast)) $ parse xs
 --depraciated
@@ -21,6 +25,8 @@ parse (T_SPACE a: T_ULI : T_SPACE i: T_Text str: xs) = maybe Nothing (\ast -> Ju
 --parse (T_BOLD:T_Text str:T_BOLD:xs)= maybe Nothing (\ast -> Just $ addP (P (FT str:[])) ast) $ parse xs
 parse xs   = maybe Nothing (\ast -> Just $ addP (P $fst(textParse [] xs)) ast) $ parse $snd(textParse [] xs)
 --parse _ = Just $ Sequence []
+
+
 
 
 textParse text (T_Text s:xs)= textParse (text++[Te s]) xs
