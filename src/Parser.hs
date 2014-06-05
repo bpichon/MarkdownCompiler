@@ -10,9 +10,8 @@ parse :: [MDToken] -> Maybe AST
 parse []                       = Just $ Sequence []
 
 -- Escape Fälle: *,+,-,**
-parse (T_SLASH: T_ITALIC: xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (ast)) $ parse (T_Text "*":xs)
-parse (T_SLASH: T_ULI: xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (ast)) $ parse (T_Text "-":xs)
-
+parse (T_SLASH: T_Text t: xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (ast)) $ parse (T_Text t:xs)
+parse (T_SLASH: T_SLASH:xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (ast)) $ parse (T_Text "\\":xs)
 -- Zwei Zeilenumbrüche hintereinander sind eine leere Zeile, die in eine Sequenz eingeführt wird (wirklich immer?)
 parse (T_Newline:T_Newline:xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (EmptyLine : ast)) $ parse xs
 --depraciated
@@ -35,6 +34,10 @@ textParse text (T_BOLD:T_Text str:T_BOLD:xs)= textParse (text++[FT str]) xs
 textParse text l@(T_Newline:T_Newline:xs)= (text,l)
 textParse text (T_Newline:xs)= (text++[NL],xs)
 textParse text (T_SPACE a:xs)= (text++[Te " "],xs)
+textParse text (T_SLASH: T_ITALIC: xs) = (text++[Te "*"], xs)
+textParse text (T_SLASH: T_SLASH: xs) = (text++[Te "\\"], xs)
+textParse text (T_SLASH: T_Text t: xs) = (text++[Te ("\\"++t)], xs)
+
 
 
 textParse text [] = (text,[])

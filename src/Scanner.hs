@@ -37,7 +37,6 @@ scan str@(' ':xs) =
 
 -- wenn das '-' am Zeilenanfang gelesen wird, ist es Level 0
 -- TODO: noch sind wir sicher am Zeilenanfang, aber nicht mehr unbedingt, wenn wir weitere Fälle einbauen (Links etc.)
-scan ('\\':xs)     = maybe Nothing (\tokens -> Just (T_SLASH:tokens))    $ scan xs
 scan ('-':xs)     = maybe Nothing (\tokens -> Just (T_ULI:tokens))    $ scan xs
 scan ('+':xs)     = maybe Nothing (\tokens -> Just (T_ULI:tokens))    $ scan xs
 
