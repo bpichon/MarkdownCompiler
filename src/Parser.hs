@@ -11,6 +11,7 @@ parse []                       = Just $ Sequence []
 
 -- Escape Fälle: *,+,-,**
 parse (T_SLASH: T_ITALIC: xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (ast)) $ parse (T_Text "*":xs)
+parse (T_SLASH: T_ULI: xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (ast)) $ parse (T_Text "-":xs)
 
 -- Zwei Zeilenumbrüche hintereinander sind eine leere Zeile, die in eine Sequenz eingeführt wird (wirklich immer?)
 parse (T_Newline:T_Newline:xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (EmptyLine : ast)) $ parse xs
