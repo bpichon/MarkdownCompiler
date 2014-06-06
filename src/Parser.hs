@@ -25,6 +25,7 @@ parse (T_SPACE a: T_OLI : xs) = let (elem, rest)= textParse [] xs
                                 in  maybe Nothing (\ast -> Just $ addOLI  withoutNL ast a) $ parse rest
 parse (T_SPACE a: T_ULI : T_SPACE i: xs) = let (elem, rest)= textParse [] xs   
                                                withoutNL = filter isNewLine elem
+                                              
                                            in  maybe Nothing (\ast -> Just $ addULI  withoutNL ast a) $ parse rest
                             
 parse xs   = maybe Nothing (\ast -> Just $ addP (P $fst(textParse [] xs)) ast) $ parse $snd(textParse [] xs)
@@ -53,6 +54,7 @@ textParse text (T_Exclam:T_OpenSqu: T_Text t: T_CloseSqu: xs)= (text++[Te ("!["+
 textParse text (T_SLASH: T_ITALIC: xs) = (text++[Te "*"], xs)
 textParse text (T_SLASH: T_SLASH: xs) = (text++[Te "\\"], xs)
 textParse text (T_SLASH: T_Text t: xs) = (text++[Te ("\\"++t)], xs)
+textParse text (T_SLASH: T_BOLD : xs)= (text++[Te "**"], xs)
 
 
 
