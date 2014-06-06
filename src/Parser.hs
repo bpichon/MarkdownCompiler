@@ -31,11 +31,15 @@ parse xs   = maybe Nothing (\ast -> Just $ addP (P $fst(textParse [] xs)) ast) $
 
 textParse text (T_Text s:xs)= textParse (text++[Te s]) xs
 textParse text (T_BOLD:T_Text str:T_BOLD:xs)= textParse (text++[FT str]) xs
+
 textParse text (T_OpenSqu: T_Text title: T_CloseSqu: T_OpenBracket: T_Text address: T_CloseBracket: xs)= textParse (text++[REF title address]) xs -- Referenz
 textParse text (T_Exclam: T_OpenSqu:T_Text alt: T_CloseSqu: T_OpenBracket: T_Text address: T_CloseBracket: xs)= textParse (text++[IMG alt address]) xs -- Image
 textParse text l@(T_Newline:T_Newline:xs)= (text,l)
 textParse text (T_Newline:xs)= (text++[NL],xs)
 textParse text (T_SPACE a:xs)= (text++[Te " "],xs)
+
+textParse text (T_OpenSqu: T_Text t: T_CloseSqu: xs)= (text++[Te ("["++t++"]")], xs) -- Falls nur eckige Klammern auftauchen ohne adressangabe
+textParse text (T_Exclam:T_OpenSqu: T_Text t: T_CloseSqu: xs)= (text++[Te ("!["++t++"]")], xs) -- Falls nur eckige Klammern auftauchen ohne adressangabe
 textParse text (T_SLASH: T_ITALIC: xs) = (text++[Te "*"], xs)
 textParse text (T_SLASH: T_SLASH: xs) = (text++[Te "\\"], xs)
 textParse text (T_SLASH: T_Text t: xs) = (text++[Te ("\\"++t)], xs)
