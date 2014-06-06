@@ -4,14 +4,14 @@ module Parser ( parse {- nur parse exportieren -} )
 import           IR
 import           Scanner
 
--- Der Parser versucht aus einer Liste von MDToken einen AST zu erzeugen 
+-- Der Parser versucht aus einer Liste von MDToken einen AST zu erzeugen
 parse :: [MDToken] -> Maybe AST
 -- Die leere Liste ergibt eine leere Sequenz
 parse []                       = Just $ Sequence []
 
 -- Escape Fälle: *,+,-,**
-parse (T_SLASH: T_ITALIC: xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (ast)) $ parse (T_Text "*":xs)
-
+parse (T_SLASH: T_Text t: xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (ast)) $ parse (T_Text t:xs)
+parse (T_SLASH: T_SLASH:xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (ast)) $ parse (T_Text "\\":xs)
 -- Zwei Zeilenumbrüche hintereinander sind eine leere Zeile, die in eine Sequenz eingeführt wird (wirklich immer?)
 parse (T_Newline:T_Newline:xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (EmptyLine : ast)) $ parse xs
 --depraciated
@@ -36,9 +36,24 @@ isNewLine _ = True
 
 textParse text (T_Text s:xs)= textParse (text++[Te s]) xs
 textParse text (T_BOLD:T_Text str:T_BOLD:xs)= textParse (text++[FT str]) xs
+textParse text (T_ITALIC:T_Text str:T_ITALIC:xs)= textParse (text++[CT str]) xs
+-- ## Referenzes and Images 
+textParse text (T_OpenSqu: T_Text title: T_CloseSqu: T_OpenBracket: T_Text address: T_CloseBracket: xs)= textParse (text++[REF title address]) xs -- Referenz
+textParse text (T_Exclam: T_OpenSqu:T_Text alt: T_CloseSqu: T_OpenBracket: T_Text address: T_CloseBracket: xs)= textParse (text++[IMG alt address]) xs -- Image
+textParse text (T_OpenArrow: T_Text address: T_CloseArrow: xs)= textParse (text++[REF address address]) xs -- Image
+
+
 textParse text l@(T_Newline:T_Newline:xs)= (text,l)
 textParse text (T_Newline:xs)= (text++[NL],xs)
 textParse text (T_SPACE a:xs)= (text++[Te " "],xs)
+
+-- ##### Escaping
+textParse text (T_OpenSqu: T_Text t: T_CloseSqu: xs)= (text++[Te ("["++t++"]")], xs) -- Falls nur eckige Klammern auftauchen ohne adressangabe
+textParse text (T_Exclam:T_OpenSqu: T_Text t: T_CloseSqu: xs)= (text++[Te ("!["++t++"]")], xs) -- Falls nur eckige Klammern auftauchen ohne adressangabe
+textParse text (T_SLASH: T_ITALIC: xs) = (text++[Te "*"], xs)
+textParse text (T_SLASH: T_SLASH: xs) = (text++[Te "\\"], xs)
+textParse text (T_SLASH: T_Text t: xs) = (text++[Te ("\\"++t)], xs)
+
 
 
 textParse text [] = (text,[])
@@ -57,37 +72,35 @@ textParse text [] = (text,[])
 addULI :: [AST] -> AST->Int -> AST
 -- Wenn wir ein Listenelement einfügen wollen und im Rest schon eine UL haben, fügen wir das Element in die UL ein
 addULI content (Sequence (ul@(UL listLevel lis@(levl)) : ast)) itemLevel
-    | (itemLevel == listLevel)  = Sequence (UL listLevel (content++lis) : ast) -- in diese Liste als letztes Element
-    | (itemLevel < listLevel)   = Sequence ((UL itemLevel (content++[ul] )):ast) -- eine ebene raus
-    | itemLevel > listLevel    = Sequence (UL listLevel ((UL itemLevel content):lis):ast)  -- neue Liste (mit neuem Item) in die Liste
+    | (itemLevel == listLevel)  = Sequence (UL listLevel ((LI content):lis) : ast) -- in diese Liste als letztes Element
+    | (itemLevel < listLevel)   = Sequence ((UL itemLevel ((LI content):[ul] )):ast) -- eine ebene raus
+    | itemLevel > listLevel    = Sequence (UL listLevel ((UL itemLevel [(LI content)]):lis):ast)  -- neue Liste (mit neuem Item) in die Liste
 
 addULI content (Sequence (ul@(OL listLevel lis@(levl)) : ast)) itemLevel
-    |(itemLevel == listLevel)  = Sequence (UL listLevel (content++lis) : ast) -- in diese Liste als letztes Element
-    | (itemLevel < listLevel)   = Sequence ((UL itemLevel (content++[ul] )):ast) -- eine ebene raus
-    | itemLevel > listLevel    = Sequence (UL listLevel ((UL itemLevel content):lis):ast)  -- neue Liste (mit neuem Item) in die Liste
-addULI content (Sequence ast)  itemLevel=  Sequence ((UL itemLevel content):ast)
-
+    |(itemLevel == listLevel)  = Sequence (UL listLevel ((LI content):lis) : ast) -- in diese Liste als letztes Element
+    | (itemLevel < listLevel)   = Sequence ((UL itemLevel ((LI content):[ul] )):ast) -- eine ebene raus
+    | itemLevel > listLevel    = Sequence (UL listLevel ((UL itemLevel [(LI content)]):lis):ast)  -- neue Liste (mit neuem Item) in die Liste
+addULI content (Sequence ast)  itemLevel=  Sequence ((UL itemLevel [(LI content)]):ast)
 
 addOLI :: [AST] -> AST->Int -> AST
 -- Wenn wir ein Listenelement einfügen wollen und im Rest schon eine UL haben, fügen wir das Element in die UL ein
 addOLI content (Sequence (ul@(OL listLevel lis@(levl)) : ast)) itemLevel
-    | (itemLevel == listLevel)  = Sequence (OL listLevel (content++lis) : ast) -- in diese Liste als letztes Element
-    | (itemLevel < listLevel)   = Sequence ((OL itemLevel (content++[ul] )):ast) -- eine ebene raus
-    | itemLevel > listLevel    = Sequence (OL listLevel ((OL itemLevel content):lis):ast)  -- neue Liste (mit neuem Item) in die Liste
+    | (itemLevel == listLevel)  = Sequence (OL listLevel ((LI content):lis) : ast) -- in diese Liste als letztes Element
+    | (itemLevel < listLevel)   = Sequence ((OL itemLevel ((LI content):[ul] )):ast) -- eine ebene raus
+    | itemLevel > listLevel    = Sequence (OL listLevel ((OL itemLevel [(LI content)]):lis):ast)  -- neue Liste (mit neuem Item) in die Liste
 
 addOLI content (Sequence (ul@(UL listLevel lis@(levl)) : ast)) itemLevel
-    |(itemLevel == listLevel)  = Sequence (OL listLevel (content++lis) : ast) -- in diese Liste als letztes Element
-    | (itemLevel < listLevel)   = Sequence ((OL itemLevel (content++[ul] )):ast) -- eine ebene raus
-    | itemLevel > listLevel    = Sequence (OL listLevel ((OL itemLevel content):lis):ast)  -- neue Liste (mit neuem Item) in die Liste
-addOLI content (Sequence ast)  itemLevel=  Sequence ((OL itemLevel content):ast)
+    |(itemLevel == listLevel)  = Sequence (OL listLevel ((LI content):lis) : ast) -- in diese Liste als letztes Element
+    | (itemLevel < listLevel)   = Sequence ((OL itemLevel ((LI content):[ul] )):ast) -- eine ebene raus
+    | itemLevel > listLevel    = Sequence (OL listLevel ((OL itemLevel [(LI content)]):lis):ast)  -- neue Liste (mit neuem Item) in die Liste
+addOLI content (Sequence ast)  itemLevel=  Sequence ((OL itemLevel [(LI content)]):ast)
 
 
 
 
-    
 
 
-    
+
 -- Mehrere aufeinander folgende Texte werden zu einem Absatz zusammengefügt.
 addP :: AST -> AST -> AST
 -- Wenn wir zwei Absätze hintereinander finden, fassen wir diese zusammen 
