@@ -12,11 +12,13 @@ data MDToken = T_Newline     -- '\n'
              | T_ITALIC
              | T_BOLD
              | T_SLASH
-             | T_OpenSqu    -- [
-             | T_CloseSqu   -- ]
-             | T_Exclam     -- !
-             | T_OpenBracket   -- (
-             | T_CloseBracket  -- )
+             | T_OpenSqu        -- [
+             | T_CloseSqu       -- ]
+             | T_Exclam         -- !
+             | T_OpenBracket    -- (
+             | T_CloseBracket   -- )
+             | T_OpenArrow      -- <
+             | T_CloseArrow     -- >
     deriving (Show, Eq)
 
 scan :: String -> Maybe [MDToken]
@@ -70,5 +72,8 @@ textScan text str@(']':xs) =   (\tokens ->  ((textScan text "")++T_CloseSqu:toke
 textScan text str@('!':xs) =   (\tokens ->  ((textScan text "")++T_Exclam:tokens))      $ textScan "" xs
 textScan text str@('(':xs) =   (\tokens ->  ((textScan text "")++T_OpenBracket:tokens)) $ textScan "" xs
 textScan text str@(')':xs) =   (\tokens ->  ((textScan text "")++T_CloseBracket:tokens))$ textScan "" xs
+textScan text str@('<':xs) =   (\tokens ->  ((textScan text "")++T_OpenArrow:tokens))   $ textScan "" xs
+textScan text str@('>':xs) =   (\tokens ->  ((textScan text "")++T_CloseArrow:tokens))  $ textScan "" xs
+
 textScan text (x:xs) = textScan (text++x:[]) xs
 
