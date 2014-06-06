@@ -30,6 +30,7 @@ generateHTML' (FT str) = "<strong>"++str++"</strong>"
 generateHTML' (CT str) = "<em>"++str++"</em>"
 generateHTML' (REF title url) = "<a href=\""++url++"\">"++title++"</a>"
 generateHTML' (IMG alt url) = "<img src=\""++url++"\" alt="++alt++" />"
+generateHTML' (CODE code) = "<code>"++ code ++"</code>"
 generateHTML' _ = ""
 
 
