@@ -26,5 +26,7 @@ generateHTML' (P str)  = "<p>" ++ concat (map generateHTML' str)  ++ "</p>\n"
 generateHTML' (Te str) = str
 generateHTML' (NL ) = "<br>"
 generateHTML' (FT str) = "<strong>"++str++"</strong>"
+generateHTML' (REF title url) = "<a href=\""++url++"\">"++title++"</a>"
+generateHTML' (IMG alt url) = "<img src=\""++url++"\" alt="++alt++" />"
 generateHTML' _ = ""
 

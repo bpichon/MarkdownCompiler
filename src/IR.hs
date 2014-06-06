@@ -11,4 +11,6 @@ data AST = Sequence [AST] -- eine Sequenz von HTML-Elementen
          | Te [Char]
          | FT [Char]
          | NL
+         | REF [Char] [Char] -- Referenz auf eine andere Seite.
+         | IMG [Char] [Char] -- Bild mit Alt-Text und Bildadresse
     deriving (Show)

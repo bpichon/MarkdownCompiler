@@ -4,7 +4,7 @@ module Parser ( parse {- nur parse exportieren -} )
 import           IR
 import           Scanner
 
--- Der Parser versucht aus einer Liste von MDToken einen AST zu erzeugen 
+-- Der Parser versucht aus einer Liste von MDToken einen AST zu erzeugen
 parse :: [MDToken] -> Maybe AST
 -- Die leere Liste ergibt eine leere Sequenz
 parse []                       = Just $ Sequence []
@@ -31,6 +31,8 @@ parse xs   = maybe Nothing (\ast -> Just $ addP (P $fst(textParse [] xs)) ast) $
 
 textParse text (T_Text s:xs)= textParse (text++[Te s]) xs
 textParse text (T_BOLD:T_Text str:T_BOLD:xs)= textParse (text++[FT str]) xs
+textParse text (T_OpenSqu: T_Text title: T_CloseSqu: T_OpenBracket: T_Text address: T_CloseBracket: xs)= textParse (text++[REF title address]) xs -- Referenz
+textParse text (T_Exclam: T_OpenSqu:T_Text alt: T_CloseSqu: T_OpenBracket: T_Text address: T_CloseBracket: xs)= textParse (text++[IMG alt address]) xs -- Image
 textParse text l@(T_Newline:T_Newline:xs)= (text,l)
 textParse text (T_Newline:xs)= (text++[NL],xs)
 textParse text (T_SPACE a:xs)= (text++[Te " "],xs)
