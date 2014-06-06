@@ -51,10 +51,10 @@ textParse text (T_SPACE a:xs)= (text++[Te " "],xs)
 -- ##### Escaping
 textParse text (T_OpenSqu: T_Text t: T_CloseSqu: xs)= (text++[Te ("["++t++"]")], xs) -- Falls nur eckige Klammern auftauchen ohne adressangabe
 textParse text (T_Exclam:T_OpenSqu: T_Text t: T_CloseSqu: xs)= (text++[Te ("!["++t++"]")], xs) -- Falls nur eckige Klammern auftauchen ohne adressangabe
-textParse text (T_SLASH: T_ITALIC: xs) = (text++[Te "*"], xs)
-textParse text (T_SLASH: T_SLASH: xs) = (text++[Te "\\"], xs)
-textParse text (T_SLASH: T_Text t: xs) = (text++[Te ("\\"++t)], xs)
-textParse text (T_SLASH: T_BOLD : xs)= (text++[Te "**"], xs)
+textParse text (T_SLASH: T_ITALIC: xs) = textParse (text++[Te "*"]) xs
+textParse text (T_SLASH: T_SLASH: xs) = textParse (text++[Te "\\"]) xs
+textParse text (T_SLASH: T_Text t: xs) = textParse (text++[Te ("\\"++t)]) xs
+textParse text (T_SLASH: T_BOLD : xs)= textParse (text++[Te "**"]) xs 
 
 
 
