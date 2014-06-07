@@ -12,9 +12,9 @@ parse []                       = Just $ Sequence []
 -- Escape Fälle: *,+,-,**
 parse (T_SLASH: T_Text t: xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (ast)) $ parse (T_Text t:xs)
 parse (T_SLASH: T_SLASH:xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (ast)) $ parse (T_Text "\\":xs)
--- Zwei Zeilenumbrüche hintereinander sind eine leere Zeile, die in eine Sequenz eingeführt wird (wirklich immer?)
+
+
 parse (T_Newline:T_Newline:xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (EmptyLine : ast)) $ parse xs
---depraciated
 parse (T_Newline:xs)           = parse xs
 -- einem Header muss ein Text folgen. Das ergibt zusammen einen Header im AST, er wird einer Sequenz hinzugefügt
 parse (T_H i : T_SPACE s : T_Text str: xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (H i str:ast)) $ parse xs
@@ -26,18 +26,27 @@ parse (T_SPACE a: T_OLI : xs) = let (elem, rest)= textParse [] xs
 parse (T_SPACE a: T_ULI : T_SPACE i: xs) = let (elem, rest)= textParse [] xs
                                                withoutNL = filter isNewLine elem
                                            in  maybe Nothing (\ast -> Just $ addULI  withoutNL ast a) $ parse rest
-
+parse (T_SPACE level: xs) | level >= 1 =let (code,rest) = span isNewL  xs
+                                     in maybe Nothing (\(Sequence ast) -> Just $ Sequence ((CODE $ mdToText code) : ast)) $ parse rest
+                          |otherwise = maybe Nothing (\(Sequence ast) -> Just $ Sequence (ast)) $ parse (T_Text " ":xs)
 parse xs   = maybe Nothing (\ast -> Just $ addP (P $fst(textParse [] xs)) ast) $ parse $snd(textParse [] xs)
 --parse _ = Just $ Sequence []
 
+isNewL T_Newline = False
+isNewL _ = True
 
 isNewLine NL = False
 isNewLine _ = True
 
+isBlackQuote T_BackQuote = False
+isBlackQuote _ = True
+
+
+
 textParse text (T_Text s:xs)= textParse (text++[Te s]) xs
 textParse text (T_BOLD:T_Text str:T_BOLD:xs)= textParse (text++[FT str]) xs
 textParse text (T_ITALIC:T_Text str:T_ITALIC:xs)= textParse (text++[CT str]) xs
-textParse text (T_BackQuote:T_Text code:T_BackQuote:xs)= textParse (text++[CODE code]) xs
+
 -- ## Referenzes and Images 
 textParse text (T_OpenSqu: T_Text title: T_CloseSqu: T_OpenBracket: T_Text address: T_CloseBracket: xs)= textParse (text++[REF title address]) xs -- Referenz
 textParse text (T_Exclam: T_OpenSqu:T_Text alt: T_CloseSqu: T_OpenBracket: T_Text address: T_CloseBracket: xs)= textParse (text++[IMG alt address]) xs -- Image
@@ -55,15 +64,24 @@ textParse text (T_SLASH: T_ITALIC: xs) = textParse (text++[Te "*"]) xs
 textParse text (T_SLASH: T_SLASH: xs) = textParse (text++[Te "\\"]) xs
 textParse text (T_SLASH: T_Text t: xs) = textParse (text++[Te ("\\"++t)]) xs
 textParse text (T_SLASH: T_BOLD : xs)= textParse (text++[Te "**"]) xs 
+textParse text (T_BackQuote: T_BackQuote: xs) = let (code,rest) = span (\x -> not ( isBlackQuote x) )xs 
+                                                    quoteCount = length(code)+1
+                                                    (code2,rest2)= codeParse [] rest quoteCount quoteCount 
+                                                 in textParse (text++[CODE $ mdToText code2]) ( rest2) 
 
+textParse text (T_BackQuote:xs)= let (code,rest) = span isBlackQuote  xs 
+                                 in textParse (text++[CODE $ mdToText code]) (tail $rest)
 
 
 textParse text [] = (text,[])
 
+codeParse :: [MDToken] -> [MDToken]->Int->Int->([MDToken],[MDToken])
+codeParse code (T_BackQuote:xs) 0 origcount = (code,xs)
+codeParse code (T_BackQuote:xs) count origcount = codeParse code xs (count -1) origcount
+codeParse code (s : xs) count origcount =   let diff = origcount-count
+                                                codeQuotes = concat(take diff(repeat "`"))  
+                                            in   codeParse (code++[T_Text codeQuotes ]++[s]) xs origcount origcount
 
-
--- Der gesamte Rest wird für den Moment ignoriert. Achtung: Der Parser schlägt, in der momentanen Implementierung, nie fehl.
--- Das kann in der Endfassung natürlich nicht so bleiben!
 
 
 
@@ -97,8 +115,22 @@ addOLI content (Sequence (ul@(UL listLevel lis@(levl)) : ast)) itemLevel
     | itemLevel > listLevel    = Sequence (OL listLevel ((OL itemLevel [(LI content)]):lis):ast)  -- neue Liste (mit neuem Item) in die Liste
 addOLI content (Sequence ast)  itemLevel=  Sequence ((OL itemLevel [(LI content)]):ast)
 
+--Hilfsfunktion die Md-Token in Text umwandelt
 
-
+mdToText (T_H i :xs) = concat (take i (repeat "#"))++ mdToText xs     
+mdToText (T_SPACE i : xs)= concat(take i(repeat "    ")) ++ mdToText xs      
+mdToText (T_Text str  : xs)= str ++ mdToText xs        
+mdToText (T_ITALIC   : xs)= "*" ++ mdToText xs      
+mdToText (T_BOLD   : xs)= "**" ++ mdToText xs 
+mdToText (T_OpenSqu   : xs)= "[" ++ mdToText xs 
+mdToText (T_CloseSqu   : xs)= "]" ++ mdToText xs 
+mdToText (T_Exclam   : xs)= "!" ++ mdToText xs 
+mdToText (T_OpenBracket   : xs)= "(" ++ mdToText xs 
+mdToText (T_CloseBracket   : xs)= ")" ++ mdToText xs 
+mdToText (T_OpenArrow   : xs)= "<" ++ mdToText xs 
+mdToText (T_CloseArrow   : xs)= ">" ++ mdToText xs 
+mdToText (T_BackQuote   : xs)= "'" ++ mdToText xs 
+mdToText _ = ""
 
 
 
