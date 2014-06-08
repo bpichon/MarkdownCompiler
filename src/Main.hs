@@ -4,7 +4,6 @@ import           CodeGen
 import           IR
 import           Parser
 import           Scanner
-import qualified Data.Map    as Map
 
 main :: IO ()
 main = do
@@ -22,7 +21,6 @@ main = do
             let maybeAst = parse tokens
             putStrLn "\nParser output\n============="
             print maybeAst
-            putStrLn Map.size references
             case maybeAst of
                 Nothing -> putStrLn "parser failed"
                 Just ast -> do -- der Parser war erfolgreich
