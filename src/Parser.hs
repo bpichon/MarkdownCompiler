@@ -1,4 +1,4 @@
-module Parser ( parse {- nur parse exportieren -})
+module Parser ( parse, references {- nur parse exportieren -})
     where
 
 import qualified Data.Map    as Map
@@ -61,14 +61,17 @@ textParse text (T_OpenArrow: T_Text address: T_CloseArrow: xs)= textParse (text+
 
 textParse text (T_OpenSqu: T_Text title: T_CloseSqu: T_OpenSqu: T_Text reference: T_CloseSqu: xs) = do
     let addressMaybe = Map.lookup reference references
+    let list = show(Map.size references)
     if Maybe.isJust addressMaybe == True
         then ([REF title (Maybe.fromJust addressMaybe)], xs) -- Referenz bereits in der Map verfügbar.
-        else ([REF title "not found"], xs) -- TODO: neuen Parser extra für Refs durchlaufen lassen. und dann auffüllen
+        else (text++[Te ("DEBUG:"++list)], xs) -- TODO: neuen Parser extra für Refs durchlaufen lassen. und dann auffüllen
+
 
 textParse text (T_OpenSqu: T_Text title: T_CloseSqu: T_DoublePoint: T_Text address: xs) = do
-    let references = Map.insert title address references -- Zur Map hinzufügen
+    let referencesTemp = Map.insert title address references -- Zur Map hinzufügen
+    let references = referencesTemp
     let count = Map.size references
-    (text, xs) -- leer zurück
+    (text++[Te ("DEBUG:"++show(Map.toList references))], xs) -- leer zurück
 
 
 textParse text l@(T_Newline:T_Newline:xs)= (text,l)
