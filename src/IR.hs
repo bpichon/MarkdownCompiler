@@ -14,5 +14,5 @@ data AST = Sequence [AST] -- eine Sequenz von HTML-Elementen
          | NL           --Neue Zeile
          | REF [Char] [Char] -- Referenz auf eine andere Seite.
          | IMG [Char] [Char] -- Bild mit Alt-Text und Bildadresse
-         | CODE [Char]
+         | CODE [Char] -- Code enthält kein Markdown
     deriving (Show)
