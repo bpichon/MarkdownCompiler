@@ -1,14 +1,9 @@
+[Webpage zur Veranstaltung][Compiler]
 
-[bildRef]:example.de
+[Compiler]: http://ob.cs.hm.edu/lectures/compiler
 
-[bildRef]:example.de
-
-
-[bild1Title][bildRef]
-
-[bild1Title][bildRef2]
-
-bölö:
-
-[bildRef2]:example.de
-
+- so
+1. listen
+2. am
+3. anfang
+- laufen
