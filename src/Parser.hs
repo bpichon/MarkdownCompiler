@@ -1,4 +1,4 @@
-module Parser ( parse, references {- nur parse exportieren -})
+module Parser ( parse, References {- nur parse exportieren -})
     where
 
 import qualified Data.Map    as Map
@@ -7,95 +7,93 @@ import qualified Debug.Trace as Log
 import           IR
 import           Scanner
 
-
---references = Map.fromList [("bildRef", "exampleee.de"), ("bildRef2", "exEampleee.de")]
-references = Map.empty
+type Key         = String
+type Address     = String
+type References  = Map.Map Key Address
 
 -- Der Parser versucht aus einer Liste von MDToken einen AST zu erzeugen
-parse :: [MDToken] -> Maybe AST
+parse :: [MDToken] -> Maybe (AST, References)
 -- Die leere Liste ergibt eine leere Sequenz
-parse []                       = Just $ Sequence []
+parse []                       = Just $ (Sequence [], Map.empty)
 
 -- Escape Fälle: *,+,-,**
-parse (T_SLASH: T_Text t: xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (ast)) $ parse (T_Text t:xs)
-parse (T_SLASH: T_SLASH:xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (ast)) $ parse (T_Text "\\":xs)
+parse (T_SLASH: T_Text t: xs) = maybe Nothing (\(Sequence ast, refs) -> Just $ (Sequence (ast), refs)) $ parse (T_Text t:xs)
+parse (T_SLASH: T_SLASH:xs) = maybe Nothing (\(Sequence ast, refs) -> Just $ (Sequence (ast), refs)) $ parse (T_Text "\\":xs)
 
 
-parse (T_Newline:T_Newline:xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (EmptyLine : ast)) $ parse xs
+parse (T_Newline:T_Newline:xs) = maybe Nothing (\(Sequence ast, refs) -> Just $ (Sequence (EmptyLine : ast), refs)) $ parse xs
 parse (T_Newline:xs)           = parse xs
 -- einem Header muss ein Text folgen. Das ergibt zusammen einen Header im AST, er wird einer Sequenz hinzugefügt
 parse (T_H i : T_SPACE s : T_Text str: xs) = let (header,rest) = span isNewL  xs
                                                  text  = str ++ ( mdToText header)
-                                             in   maybe Nothing (\(Sequence ast) -> Just $ Sequence (H i text:ast)) $ parse rest
+                                             in   maybe Nothing (\(Sequence ast, refs) -> Just $ (Sequence (H i text:ast), refs)) $ parse rest
 -- einem listitem-Marker muss auch ein Text folgen. Das gibt zusammen ein Listitem im AST.
 -- es wird mit der Hilfsfunktion addLI eingefügt
-parse ( T_OLI : xs) = let (elem, rest)= textParse [] xs
+parse ( T_OLI : xs) = let (elem, refs, rest)= textParse [] Map.empty  xs
                           withoutNL = filter isNewLine elem
-                      in  maybe Nothing (\ast -> Just $ addOLI  withoutNL ast 0) $ parse rest
-parse (T_ULI : T_SPACE i: xs) = let (elem, rest)= textParse [] xs
+                      in  maybe Nothing (\(ast, refs) -> Just $ (addOLI  withoutNL ast 0, refs)) $ parse rest
+parse (T_ULI : T_SPACE i: xs) = let (elem, refs, rest)= textParse [] Map.empty  xs
                                     withoutNL = filter isNewLine elem
-                                in  maybe Nothing (\ast -> Just $ addULI  withoutNL ast 0) $ parse rest
-parse (T_SPACE a: T_OLI : xs) = let (elem, rest)= textParse [] xs
+                                in  maybe Nothing (\(ast, refs) -> Just $ (addULI  withoutNL ast 0, refs)) $ parse rest
+parse (T_SPACE a: T_OLI : xs) = let (elem, refs, rest)= textParse [] Map.empty  xs
                                     withoutNL = filter isNewLine elem
-                                in  maybe Nothing (\ast -> Just $ addOLI  withoutNL ast a) $ parse rest
-parse (T_SPACE a: T_ULI : T_SPACE i: xs) = let (elem, rest)= textParse [] xs
+                                in  maybe Nothing (\(ast, refs) -> Just $ ((addOLI  withoutNL ast a), refs)) $ parse rest
+parse (T_SPACE a: T_ULI : T_SPACE i: xs) = let (elem, refs, rest)= textParse [] Map.empty  xs
                                                withoutNL = filter isNewLine elem
-                                           in  maybe Nothing (\ast -> Just $  addULI  withoutNL ast a) $ parse rest
+                                           in  maybe Nothing (\(ast, refs) -> Just $  ((addULI  withoutNL ast a), refs)) $ parse rest
 parse (T_SPACE level: xs) | level >= 1 =let (code,rest) = span isNewL  xs
-                                     in maybe Nothing (\(Sequence ast) -> Just $ Sequence ((CODE $ mdToText code) : ast)) $ parse rest
-                          |otherwise = maybe Nothing (\(Sequence ast) -> Just $ Sequence (ast)) $ parse (T_Text " ":xs)
-parse xs   = maybe Nothing (\ast -> Just $ addP (P $fst(textParse [] xs)) ast) $ parse $snd(textParse [] xs)
+                                     in maybe Nothing (\(Sequence ast, refs) -> Just $ (Sequence ((CODE $ mdToText code) : ast),refs)) $ parse rest
+                          |otherwise = maybe Nothing (\(Sequence ast, refs) -> Just $ (Sequence (ast), refs)) $ parse (T_Text " ":xs)
+parse xs   = maybe Nothing (\(ast, refs) -> Just $ ((addP (P  (getFirst(textParse [] refs xs) ) ) ast), refs)) $ parse $ getThird (textParse [] Map.empty xs)
 
--- Hilfsfunktion, für das Parsen von Zeilen. 
-textParse text (T_Text s:xs)= textParse (text++[Te s]) xs
-textParse text (T_BOLD:T_Text str:T_BOLD:xs)= textParse (text++[FT str]) xs
-textParse text (T_ITALIC:T_Text str:T_ITALIC:xs)= textParse (text++[CT str]) xs
+getFirst  (a,_,_) = a
+getThird ( _,_,a) = a
+textParse :: [AST]->References->[MDToken]->([AST],References,[MDToken])
+-- Hilfsfunktion, für das Parsen von Zeilen.
+textParse text refs (T_Text s:xs)= textParse (text++[Te s]) refs  xs
+textParse text refs (T_BOLD:T_Text str:T_BOLD:xs)= textParse (text++[FT str]) refs  xs
+textParse text refs (T_ITALIC:T_Text str:T_ITALIC:xs)= textParse (text++[CT str]) refs  xs
 
 -- ## Referenzes and Images
-textParse text (T_OpenSqu: T_Text title: T_CloseSqu: T_OpenBracket: T_Text address: T_CloseBracket: xs)= textParse (text++[REF title address]) xs -- Referenz
-textParse text (T_Exclam: T_OpenSqu:T_Text alt: T_CloseSqu: T_OpenBracket: T_Text address: T_CloseBracket: xs)= textParse (text++[IMG alt address]) xs -- Image
-textParse text (T_OpenArrow: T_Text address: T_CloseArrow: xs)= textParse (text++[REF address address]) xs -- Image
+textParse text refs (T_OpenSqu: T_Text title: T_CloseSqu: T_OpenBracket: T_Text address: T_CloseBracket: xs)= textParse (text++[REF title address]) refs  xs -- Referenz
+textParse text refs (T_Exclam: T_OpenSqu:T_Text alt: T_CloseSqu: T_OpenBracket: T_Text address: T_CloseBracket: xs)= textParse (text++[IMG alt address]) refs  xs -- Image
+textParse text refs (T_OpenArrow: T_Text address: T_CloseArrow: xs)= textParse (text++[REF address address]) refs  xs -- Image
 
-textParse text (T_OpenSqu: T_Text title: T_CloseSqu: T_OpenSqu: T_Text reference: T_CloseSqu: xs) = do
-    let addressMaybe = Map.lookup reference references
-        list = show(Map.size references)
-    if Maybe.isJust addressMaybe == True
-        then ([REF title (Maybe.fromJust addressMaybe)], xs) -- Referenz bereits in der Map verfügbar.
-        else (text++[Te ("DEBUG:"++list)], xs) -- TODO: neuen Parser extra für Refs durchlaufen lassen. und dann auffüllen
+textParse text refs (T_OpenSqu: T_Text title: T_CloseSqu: T_OpenSqu: T_Text reference: T_CloseSqu: xs) = textParse (text++[REF2 title reference]) refs  xs
 
-
-textParse text (T_OpenSqu: T_Text title: T_CloseSqu: T_DoublePoint: T_Text address: xs) = do
-    let references' = Map.insert title address references -- Zur Map hinzufügen
-        references = references'
-    (text++[Te ("DEBUG:"++show(Map.toList references))], xs) -- leer zurück
+textParse text refs (T_OpenSqu: T_Text title: T_CloseSqu: T_DoublePoint: T_Text address: xs) =
+    let references = Map.insert title address refs -- Zur Map hinzufügen
+    --let references = references'
+    --in (text++[Te ("DEBUG:"++show(Map.toList references))], xs) -- leer zurück
+    in  textParse text references xs
 
 
-textParse text l@(T_Newline:T_Newline:xs)= (text,l)
+textParse text refs l@(T_Newline:T_Newline:xs)= (text,refs ,l)
 
 
-textParse text (T_Newline:xs)= (text++[NL],xs)
-textParse text (T_SPACE a:xs)= (text++[Te " "],xs)
+textParse text refs (T_Newline:xs)= (text++[NL],refs ,xs)
+textParse text refs (T_SPACE a:xs)= (text++[Te " "],refs,xs)
 
 -- ##### Escaping
-textParse text (T_OpenSqu: T_Text t: T_CloseSqu: xs)= (text++[Te ("["++t++"]")], xs) -- Falls nur eckige Klammern auftauchen ohne adressangabe
-textParse text (T_Exclam:T_OpenSqu: T_Text t: T_CloseSqu: xs)= (text++[Te ("!["++t++"]")], xs) -- Falls nur eckige Klammern auftauchen ohne adressangabe
-textParse text (T_DoublePoint: xs)= textParse (text++[Te ":"]) xs -- Falls nur ein Dopppelpunkt auftaucht 
-textParse text (T_SLASH: T_ITALIC: xs) = textParse (text++[Te "*"]) xs
-textParse text (T_SLASH: T_SLASH: xs) = textParse (text++[Te "\\"]) xs
-textParse text (T_SLASH: T_Text t: xs) = textParse (text++[Te ("\\"++t)]) xs
-textParse text (T_SLASH: T_BOLD : xs)= textParse (text++[Te "*"]) (T_ITALIC:xs)
-textParse text (T_BackQuote: T_BackQuote: xs) = let (code,rest) = span (\x -> not ( isBlackQuote x) )xs
-                                                    quoteCount = length(code)+1
-                                                    (code2,rest2)= codeParse [] rest quoteCount quoteCount
-                                                 in textParse (text++[CODE $ mdToText code2]) ( rest2)
+textParse text refs (T_OpenSqu: T_Text t: T_CloseSqu: xs)= (text++[Te ("["++t++"]")], refs ,xs) -- Falls nur eckige Klammern auftauchen ohne adressangabe
+textParse text refs (T_Exclam:T_OpenSqu: T_Text t: T_CloseSqu: xs)= (text++[Te ("!["++t++"]")], refs , xs) -- Falls nur eckige Klammern auftauchen ohne adressangabe
+textParse text refs (T_DoublePoint: xs)= textParse (text++[Te ":"]) refs xs -- Falls nur ein Dopppelpunkt auftaucht 
+textParse text refs (T_SLASH: T_ITALIC: xs) = textParse (text++[Te "*"]) refs  xs
+textParse text refs (T_SLASH: T_SLASH: xs) = textParse (text++[Te "\\"]) refs  xs
+textParse text refs (T_SLASH: T_Text t: xs) = textParse (text++[Te ("\\"++t)]) refs  xs
+textParse text refs (T_SLASH: T_BOLD : xs)= textParse (text++[Te "*"]) refs  (T_ITALIC:xs)
+textParse text refs (T_BackQuote: T_BackQuote: xs) = let (code,rest) = span (\x -> not ( isBlackQuote x) )xs
+                                                         quoteCount = length(code)+1
+                                                         (code2,rest2)= codeParse [] rest quoteCount quoteCount
+                                                 in textParse (text++[CODE $ mdToText code2]) refs  ( rest2)
 
-textParse text (T_BackQuote:xs)= let (code,rest) = span isBlackQuote  xs
-                                 in textParse (text++[CODE $ mdToText code]) (tail $rest)
+textParse text refs (T_BackQuote:xs)= let (code,rest) = span isBlackQuote  xs
+                                 in textParse (text++[CODE $ mdToText code]) refs (tail $rest)
 
 
-textParse text [] = (text,[])
+textParse text refs [] = (text, refs,[])
 -- Alles womit der compiler nicht zurechtkommt wird direkt in text umgewandel 
-textParse text (x:rest)  =textParse (text++[Te (mdToText [x])]) rest
+textParse text refs (x:rest)  =textParse (text++[Te (mdToText [x])]) refs rest
 
 
 

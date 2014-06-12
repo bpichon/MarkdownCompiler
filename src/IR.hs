@@ -13,6 +13,8 @@ data AST = Sequence [AST] -- eine Sequenz von HTML-Elementen
          | CT [Char]    -- Kursiver Text
          | NL           --Neue Zeile
          | REF [Char] [Char] -- Referenz auf eine andere Seite.
+         | REF2 [Char] [Char] -- Referenz auf eine andere Seite.
          | IMG [Char] [Char] -- Bild mit Alt-Text und Bildadresse
+         | IMG2 [Char] [Char] -- Bild mit Alt-Text und Bildadresse
          | CODE [Char] -- Code enthält kein Markdown
     deriving (Show)

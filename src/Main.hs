@@ -26,4 +26,4 @@ main = do
                 Just ast -> do -- der Parser war erfolgreich
                     putStrLn "\nGenerated HTML\n=============="
                     -- generiere HTML und gebe es aus
-                    putStrLn $ generateHTML ast
+                    putStrLn $ generateHTML ast 
