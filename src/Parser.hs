@@ -44,10 +44,8 @@ parse (T_SPACE a: T_ULI : T_SPACE i: xs) = let (elem, refs, rest)= textParse [] 
 parse (T_SPACE level: xs) | level >= 1 =let (code,rest) = span isNewL  xs
                                      in maybe Nothing (\(Sequence ast, refs) -> Just $ (Sequence ((CODE $ mdToText code) : ast),refs)) $ parse rest
                           |otherwise = maybe Nothing (\(Sequence ast, refs) -> Just $ (Sequence (ast), refs)) $ parse (T_Text " ":xs)
-parse xs   = maybe Nothing (\(ast, refs) -> Just $ ((addP (P  (getFirst(textParse [] refs xs) ) ) ast), refs)) $ parse $ getThird (textParse [] Map.empty xs)
+parse xs   = maybe Nothing (\(ast, refs) -> Just $ ((addP (P  ((\(a,_,_)->a)(textParse [] refs xs) ) ) ast), refs)) $ parse $ (\(_,_,a)->a) (textParse [] Map.empty xs)
 
-getFirst  (a,_,_) = a
-getThird ( _,_,a) = a
 textParse :: [AST]->References->[MDToken]->([AST],References,[MDToken])
 -- Hilfsfunktion, für das Parsen von Zeilen.
 textParse text refs (T_Text s:xs)= textParse (text++[Te s]) refs  xs
@@ -162,8 +160,6 @@ isNewLine _ = True
 
 isBlackQuote T_BackQuote = False
 isBlackQuote _ = True
-
-
 
 -- Mehrere aufeinander folgende Texte werden zu einem Absatz zusammengefügt.
 addP :: AST -> AST -> AST

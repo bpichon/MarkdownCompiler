@@ -5,6 +5,7 @@ import IR
 import Parser
 import qualified Data.Map    as Map
 
+phoneBook = Map.fromList [(1234, "Erik"), (5678, "Patrik")]
 -- HTML generieren
 -- zuerst das äußere Gerüst
 generateHTML :: (AST, References) -> String
@@ -17,24 +18,31 @@ generateHTML' ((Sequence (a:as)),r) = generateHTML' (a,r) ++ "\n" ++ generateHTM
 -- eine Überschrift
 generateHTML' ((H i str),_) = "<h" ++ show i ++ ">" ++ str ++ "</h" ++ show i ++ ">\n"
 -- eine ungeordnete Liste
-generateHTML' ((UL level lis),r) = "<ul>\n" ++ concat ( map generateHTML'(lis,r) )++ "</ul>\n"
+generateHTML' ((UL level lis),r) = "<ul>\n" ++ (listGen lis r)++ "</ul>\n"
 -- eine geordnete Liste
-generateHTML' ((OL level lis),r) = "<ol>\n" ++ concat (map generateHTML' (lis,r))++ "</ol>\n"
+generateHTML' ((OL level lis),r) = "<ol>\n" ++ listGen lis r++ "</ol>\n"
 
-generateHTML' ((LI elem),r) = "<li>" ++concat (map generateHTML' (elem,r)) ++"</li>\n"
+generateHTML' ((LI elem),r) = "<li>" ++listGen  elem r++"</li>\n"
 -- Listenelemente
 -- ein Absatz
-generateHTML' ((P str),r)  = "<p>" ++ concat (map generateHTML' (str,r))  ++ "</p>\n"
+generateHTML' ((P str),r)  = "<p>" ++ listGen str r  ++ "</p>\n"
 -- alles andere (?) wird für den Moment ignoriert
 generateHTML' ((Te str),_) = str
 
 generateHTML' ((NL ),_) = "<br>"
 generateHTML' ((FT str),_) = "<strong>"++str++"</strong>"
 generateHTML' ((CT str),_) = "<em>"++str++"</em>"
-generateHTML' ((REF title url),_) = "<a href=\""++url++"\">"++title++"</a>"
-generateHTML' ((REF2 title reference),refs) = "<a href=\""++Map.lookup(reference, refs)++"\">"++title++"</a>"
+generateHTML' ((REF title url),_) =  "<a href=\""++url++"\">"++title++"</a>"                                           
+generateHTML' ((REF2 title url),_) =  let mx = Map.lookup 1234 phoneBook                                           
+                                     in  case mx of
+                                     Just a -> "<a href=\""++a ++"\">"++title++"</a>"
+                                     Nothing -> "<a href=\""++"\">"++title++"</a>"
+
+
+
 generateHTML' ((IMG alt url),_) = "<img src=\""++url++"\" alt="++alt++" />"
 generateHTML' ((CODE code),_) = "<code>"++ code ++"</code>"
 generateHTML' (_,_) = ""
 
-
+listGen [] rs = ""
+listGen (elem:xs) rs= generateHTML' (elem,rs)++ listGen xs rs

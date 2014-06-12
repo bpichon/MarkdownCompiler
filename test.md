@@ -1,9 +1,2 @@
-### hallo
-
-- noch mehr
-- blabalabalö
--pisahfpsif
-
-sajfb
-*d*losbad**dff**asdfweipqfh
-
+[Webpage zur Veranstaltung][Compiler]
+[Compiler]: http://ob.cs.hm.edu/lectures/compiler
