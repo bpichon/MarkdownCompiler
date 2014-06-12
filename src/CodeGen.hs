@@ -25,6 +25,7 @@ generateHTML' (LI elem) = "<li>" ++concat (map generateHTML' elem) ++"</li>\n"
 generateHTML' (P str)  = "<p>" ++ concat (map generateHTML' str)  ++ "</p>\n"
 -- alles andere (?) wird für den Moment ignoriert
 generateHTML' (Te str) = str
+
 generateHTML' (NL ) = "<br>"
 generateHTML' (FT str) = "<strong>"++str++"</strong>"
 generateHTML' (CT str) = "<em>"++str++"</em>"

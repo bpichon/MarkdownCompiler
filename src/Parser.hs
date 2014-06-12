@@ -24,7 +24,9 @@ parse (T_SLASH: T_SLASH:xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence 
 parse (T_Newline:T_Newline:xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (EmptyLine : ast)) $ parse xs
 parse (T_Newline:xs)           = parse xs
 -- einem Header muss ein Text folgen. Das ergibt zusammen einen Header im AST, er wird einer Sequenz hinzugefügt
-parse (T_H i : T_SPACE s : T_Text str: xs) = maybe Nothing (\(Sequence ast) -> Just $ Sequence (H i str:ast)) $ parse xs
+parse (T_H i : T_SPACE s : T_Text str: xs) = let (header,rest) = span isNewL  xs
+                                                 text  = str ++ ( mdToText header)
+                                             in   maybe Nothing (\(Sequence ast) -> Just $ Sequence (H i text:ast)) $ parse rest
 -- einem listitem-Marker muss auch ein Text folgen. Das gibt zusammen ein Listitem im AST.
 -- es wird mit der Hilfsfunktion addLI eingefügt
 parse ( T_OLI : xs) = let (elem, rest)= textParse [] xs
@@ -38,7 +40,7 @@ parse (T_SPACE a: T_OLI : xs) = let (elem, rest)= textParse [] xs
                                 in  maybe Nothing (\ast -> Just $ addOLI  withoutNL ast a) $ parse rest
 parse (T_SPACE a: T_ULI : T_SPACE i: xs) = let (elem, rest)= textParse [] xs
                                                withoutNL = filter isNewLine elem
-                                           in  maybe Nothing (\ast -> Just $ addULI  withoutNL ast a) $ parse rest
+                                           in  maybe Nothing (\ast -> Just $  addULI  withoutNL ast a) $ parse rest
 parse (T_SPACE level: xs) | level >= 1 =let (code,rest) = span isNewL  xs
                                      in maybe Nothing (\(Sequence ast) -> Just $ Sequence ((CODE $ mdToText code) : ast)) $ parse rest
                           |otherwise = maybe Nothing (\(Sequence ast) -> Just $ Sequence (ast)) $ parse (T_Text " ":xs)
@@ -69,6 +71,8 @@ textParse text (T_OpenSqu: T_Text title: T_CloseSqu: T_DoublePoint: T_Text addre
 
 
 textParse text l@(T_Newline:T_Newline:xs)= (text,l)
+
+
 textParse text (T_Newline:xs)= (text++[NL],xs)
 textParse text (T_SPACE a:xs)= (text++[Te " "],xs)
 
@@ -90,6 +94,8 @@ textParse text (T_BackQuote:xs)= let (code,rest) = span isBlackQuote  xs
 
 
 textParse text [] = (text,[])
+-- Alles womit der compiler nicht zurechtkommt wird direkt in text umgewandel 
+textParse text (x:rest)  =textParse (text++[Te (mdToText [x])]) rest
 
 
 
