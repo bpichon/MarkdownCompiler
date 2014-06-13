@@ -45,7 +45,7 @@ parse (T_SPACE level: xs) | level >= 1 =let (code,rest) = span isNewL  xs
                                      in maybe Nothing (\(Sequence ast, refs) -> Just $ (Sequence ((CODE $ mdToText code) : ast),refs)) $ parse rest
                           |otherwise = maybe Nothing (\(Sequence ast, refs) -> Just $ (Sequence (ast), refs)) $ parse (T_Text " ":xs)
 parse xs   = maybe Nothing (\(ast, refs) -> Just $ ((addP (P  ((\(a,_,_)->a)(textParse [] refs xs) ) ) ast), refs)) $ parse $ (\(_,_,a)->a) (textParse [] Map.empty xs)
-
+--FEHLER, references wird nicht richtig übergeben.
 textParse :: [AST]->References->[MDToken]->([AST],References,[MDToken])
 -- Hilfsfunktion, für das Parsen von Zeilen.
 textParse text refs (T_Text s:xs)= textParse (text++[Te s]) refs  xs
@@ -57,12 +57,10 @@ textParse text refs (T_OpenSqu: T_Text title: T_CloseSqu: T_OpenBracket: T_Text 
 textParse text refs (T_Exclam: T_OpenSqu:T_Text alt: T_CloseSqu: T_OpenBracket: T_Text address: T_CloseBracket: xs)= textParse (text++[IMG alt address]) refs  xs -- Image
 textParse text refs (T_OpenArrow: T_Text address: T_CloseArrow: xs)= textParse (text++[REF address address]) refs  xs -- Image
 
-textParse text refs (T_OpenSqu: T_Text title: T_CloseSqu: T_OpenSqu: T_Text reference: T_CloseSqu: xs) = textParse (text++[REF2 title reference]) refs  xs
+textParse text refs (T_OpenSqu: T_Text title: T_CloseSqu: T_OpenSqu: T_Text referenceFirst:  T_CloseSqu: xs) = textParse (text++[REF2 title referenceFirst]) refs  xs
 
-textParse text refs (T_OpenSqu: T_Text title: T_CloseSqu: T_DoublePoint: T_Text address: xs) =
-    let references = Map.insert title address refs -- Zur Map hinzufügen
-    --let references = references'
-    --in (text++[Te ("DEBUG:"++show(Map.toList references))], xs) -- leer zurück
+textParse text refs (T_OpenSqu: T_Text title: T_CloseSqu: T_DoublePoint: T_Text address: T_DoublePoint:T_Text address2: xs) =
+    let references = Map.insert title (address++address2) refs -- Zur Map hinzufügen
     in  textParse text references xs
 
 
@@ -70,12 +68,13 @@ textParse text refs l@(T_Newline:T_Newline:xs)= (text,refs ,l)
 
 
 textParse text refs (T_Newline:xs)= (text++[NL],refs ,xs)
+
 textParse text refs (T_SPACE a:xs)= (text++[Te " "],refs,xs)
 
 -- ##### Escaping
 textParse text refs (T_OpenSqu: T_Text t: T_CloseSqu: xs)= (text++[Te ("["++t++"]")], refs ,xs) -- Falls nur eckige Klammern auftauchen ohne adressangabe
 textParse text refs (T_Exclam:T_OpenSqu: T_Text t: T_CloseSqu: xs)= (text++[Te ("!["++t++"]")], refs , xs) -- Falls nur eckige Klammern auftauchen ohne adressangabe
-textParse text refs (T_DoublePoint: xs)= textParse (text++[Te ":"]) refs xs -- Falls nur ein Dopppelpunkt auftaucht 
+textParse text refs (T_DoublePoint: xs)= textParse (text++[Te ":"]) refs xs -- Falls nur ein Dopppelpunkt auftaucht
 textParse text refs (T_SLASH: T_ITALIC: xs) = textParse (text++[Te "*"]) refs  xs
 textParse text refs (T_SLASH: T_SLASH: xs) = textParse (text++[Te "\\"]) refs  xs
 textParse text refs (T_SLASH: T_Text t: xs) = textParse (text++[Te ("\\"++t)]) refs  xs
@@ -90,7 +89,7 @@ textParse text refs (T_BackQuote:xs)= let (code,rest) = span isBlackQuote  xs
 
 
 textParse text refs [] = (text, refs,[])
--- Alles womit der compiler nicht zurechtkommt wird direkt in text umgewandel 
+-- Alles womit der compiler nicht zurechtkommt wird direkt in text umgewandel
 textParse text refs (x:rest)  =textParse (text++[Te (mdToText [x])]) refs rest
 
 
@@ -160,6 +159,8 @@ isNewLine _ = True
 
 isBlackQuote T_BackQuote = False
 isBlackQuote _ = True
+
+
 
 -- Mehrere aufeinander folgende Texte werden zu einem Absatz zusammengefügt.
 addP :: AST -> AST -> AST

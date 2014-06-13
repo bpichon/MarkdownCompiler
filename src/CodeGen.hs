@@ -5,7 +5,6 @@ import IR
 import Parser
 import qualified Data.Map    as Map
 
-phoneBook = Map.fromList [(1234, "Erik"), (5678, "Patrik")]
 -- HTML generieren
 -- zuerst das äußere Gerüst
 generateHTML :: (AST, References) -> String
@@ -33,10 +32,10 @@ generateHTML' ((NL ),_) = "<br>"
 generateHTML' ((FT str),_) = "<strong>"++str++"</strong>"
 generateHTML' ((CT str),_) = "<em>"++str++"</em>"
 generateHTML' ((REF title url),_) =  "<a href=\""++url++"\">"++title++"</a>"                                           
-generateHTML' ((REF2 title url),_) =  let mx = Map.lookup 1234 phoneBook                                           
+generateHTML' ((REF2 title url),r) =  let mx = Map.lookup url r                                         
                                      in  case mx of
                                      Just a -> "<a href=\""++a ++"\">"++title++"</a>"
-                                     Nothing -> "<a href=\""++"\">"++title++"</a>"
+                                     Nothing -> "<a href=\""++show r++"\">"++title++"</a>"
 
 
 
