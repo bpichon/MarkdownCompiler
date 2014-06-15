@@ -4,6 +4,7 @@ import           CodeGen
 import           IR
 import           Parser
 import           Scanner
+import qualified Data.Maybe  as Maybe
 
 main :: IO ()
 main = do
@@ -19,8 +20,9 @@ main = do
         Just tokens -> do -- der Scanner war erfolgreich
             -- versuche die Tokens zu parsen
             let maybeAst = parse tokens
+                (ast, refMap) = Maybe.fromJust(maybeAst)
             putStrLn "\nParser output\n============="
-            print maybeAst
+            print maybeAst--refMap
             case maybeAst of
                 Nothing -> putStrLn "parser failed"
                 Just ast -> do -- der Parser war erfolgreich

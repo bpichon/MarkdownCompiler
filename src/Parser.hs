@@ -14,7 +14,7 @@ type References  = Map.Map Key Address
 -- Der Parser versucht aus einer Liste von MDToken einen AST zu erzeugen
 parse :: [MDToken] -> Maybe (AST, References)
 -- Die leere Liste ergibt eine leere Sequenz
-parse []                       = Just $ (Sequence [], Map.empty)
+parse []                       = Just $ (Sequence [], Map.fromList [("abc", "abc2")])
 
 -- Escape Fälle: *,+,-,**
 parse (T_SLASH: T_Text t: xs) = maybe Nothing (\(Sequence ast, refs) -> Just $ (Sequence (ast), refs)) $ parse (T_Text t:xs)
@@ -67,7 +67,7 @@ textParse text refs (T_OpenSqu: T_Text title: T_CloseSqu: T_DoublePoint: T_Text 
 textParse text refs l@(T_Newline:T_Newline:xs)= (text,refs ,l)
 
 
-textParse text refs (T_Newline:xs)= (text++[NL],refs ,xs)
+textParse text refs (T_Newline:xs)= textParse (text++[NL]++[Te (" Map:"++show(Map.toList(refs)))]) refs xs--(text++[NL],refs ,xs)
 
 textParse text refs (T_SPACE a:xs)= (text++[Te " "],refs,xs)
 

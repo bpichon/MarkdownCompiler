@@ -31,11 +31,11 @@ generateHTML' ((Te str),_) = str
 generateHTML' ((NL ),_) = "<br>"
 generateHTML' ((FT str),_) = "<strong>"++str++"</strong>"
 generateHTML' ((CT str),_) = "<em>"++str++"</em>"
-generateHTML' ((REF title url),_) =  "<a href=\""++url++"\">"++title++"</a>"                                           
-generateHTML' ((REF2 title url),r) =  let mx = Map.lookup url r                                         
+generateHTML' ((REF title url),_) =  "<a href=\""++url++"\">"++title++"</a>"
+generateHTML' ((REF2 title url),r) =  let mx = Map.lookup url r
                                      in  case mx of
-                                     Just a -> "<a href=\""++a ++"\">"++title++"</a>"
-                                     Nothing -> "<a href=\""++show r++"\">"++title++"</a>"
+                                     Just a -> "<a href=\""++ a ++"\">"++title++"</a>"
+                                     Nothing -> "<a href=\""++show(Map.toList(r))++"\">"++title++"</a>"
 
 
 
