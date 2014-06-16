@@ -44,8 +44,10 @@ parse (T_SPACE a: T_ULI : T_SPACE i: xs) = let (elem, refs, rest)= textParse [] 
 parse (T_SPACE level: xs) | level >= 1 =let (code,rest) = span isNewL  xs
                                      in maybe Nothing (\(Sequence ast, refs) -> Just $ (Sequence ((CODE $ mdToText code) : ast),refs)) $ parse rest
                           |otherwise = maybe Nothing (\(Sequence ast, refs) -> Just $ (Sequence (ast), refs)) $ parse (T_Text " ":xs)
-parse xs   = maybe Nothing (\(ast, refs) -> Just $ ((addP (P  ((\(a,_,_)->a)(textParse [] refs xs) ) ) ast), refs)) $ parse $ (\(_,_,a)->a) (textParse [] Map.empty xs)
---FEHLER, references wird nicht richtig übergeben.
+parse xs   =   let (tokens,reference, rest) = textParse [] Map.empty xs
+                  -- references = Map.insert "Compiler" (" http//ob.cs.hm.edu/lectures/compiler") Map.empty 
+               in   maybe Nothing (\(ast, refs) -> Just $ ((addP (P  ((\(a,_,_)->a)(textParse [] refs xs) ) ) ast), Map.union reference refs)) $ parse rest
+               
 textParse :: [AST]->References->[MDToken]->([AST],References,[MDToken])
 -- Hilfsfunktion, für das Parsen von Zeilen.
 textParse text refs (T_Text s:xs)= textParse (text++[Te s]) refs  xs
@@ -60,7 +62,7 @@ textParse text refs (T_OpenArrow: T_Text address: T_CloseArrow: xs)= textParse (
 textParse text refs (T_OpenSqu: T_Text title: T_CloseSqu: T_OpenSqu: T_Text referenceFirst:  T_CloseSqu: xs) = textParse (text++[REF2 title referenceFirst]) refs  xs
 
 textParse text refs (T_OpenSqu: T_Text title: T_CloseSqu: T_DoublePoint: T_Text address: T_DoublePoint:T_Text address2: xs) =
-    let references = Map.insert title (address++address2) refs -- Zur Map hinzufügen
+    let references = Map.insert title (address++":"++address2) refs -- Zur Map hinzufügen
     in  textParse text references xs
 
 

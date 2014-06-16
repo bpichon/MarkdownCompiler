@@ -34,10 +34,10 @@ generateHTML' ((CT str),_) = "<em>"++str++"</em>"
 generateHTML' ((REF title url),_) =  "<a href=\""++url++"\">"++title++"</a>"                                           
 generateHTML' ((REF2 title url),r) =  let mx = Map.lookup url r                                         
                                      in  case mx of
-                                     Just a -> "<a href=\""++a ++"\">"++title++"</a>"
+                                     Just a -> "<a href=\""++a++"\">"++title++"</a>"      
                                      Nothing -> "<a href=\""++show r++"\">"++title++"</a>"
 
-
+-- <a href="http://search.yahoo.com/" title="Yahoo Search">Yahoo</a>
 
 generateHTML' ((IMG alt url),_) = "<img src=\""++url++"\" alt="++alt++" />"
 generateHTML' ((CODE code),_) = "<code>"++ code ++"</code>"
