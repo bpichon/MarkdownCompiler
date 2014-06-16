@@ -32,21 +32,20 @@ parse (T_H i : T_SPACE s : T_Text str: xs) = let (header,rest) = span isNewL  xs
 parse ( T_OLI : xs) = let (elem, refs, rest)= textParse [] Map.empty  xs
                           withoutNL = filter isNewLine elem
                       in  maybe Nothing (\(ast, refs) -> Just $ (addOLI  withoutNL ast 0, refs)) $ parse rest
-parse (T_ULI : T_SPACE i: xs) = let (elem, refs, rest)= textParse [] Map.empty  xs
+parse (T_ULI : T_SPACE i: xs) = let (elem, reference, rest)= textParse [] Map.empty  xs
                                     withoutNL = filter isNewLine elem
-                                in  maybe Nothing (\(ast, refs) -> Just $ (addULI  withoutNL ast 0, refs)) $ parse rest
-parse (T_SPACE a: T_OLI : xs) = let (elem, refs, rest)= textParse [] Map.empty  xs
+                                in  maybe Nothing (\(ast, refs) -> Just $ (addULI  withoutNL ast 0, Map.union reference refs)) $ parse rest
+parse (T_SPACE a: T_OLI : xs) = let (elem, reference, rest)= textParse [] Map.empty  xs
                                     withoutNL = filter isNewLine elem
-                                in  maybe Nothing (\(ast, refs) -> Just $ ((addOLI  withoutNL ast a), refs)) $ parse rest
-parse (T_SPACE a: T_ULI : T_SPACE i: xs) = let (elem, refs, rest)= textParse [] Map.empty  xs
+                                in  maybe Nothing (\(ast, refs) -> Just $ ((addOLI  withoutNL ast a), Map.union reference refs)) $ parse rest
+parse (T_SPACE a: T_ULI : T_SPACE i: xs) = let (elem, reference, rest)= textParse [] Map.empty  xs
                                                withoutNL = filter isNewLine elem
-                                           in  maybe Nothing (\(ast, refs) -> Just $  ((addULI  withoutNL ast a), refs)) $ parse rest
+                                           in  maybe Nothing (\(ast, refs) -> Just $  ((addULI  withoutNL ast a), Map.union reference refs)) $ parse rest
 parse (T_SPACE level: xs) | level >= 1 =let (code,rest) = span isNewL  xs
                                      in maybe Nothing (\(Sequence ast, refs) -> Just $ (Sequence ((CODE $ mdToText code) : ast),refs)) $ parse rest
                           |otherwise = maybe Nothing (\(Sequence ast, refs) -> Just $ (Sequence (ast), refs)) $ parse (T_Text " ":xs)
 parse xs   =   let (tokens,reference, rest) = textParse [] Map.empty xs
-                  -- references = Map.insert "Compiler" (" http//ob.cs.hm.edu/lectures/compiler") Map.empty 
-               in   maybe Nothing (\(ast, refs) -> Just $ ((addP (P  ((\(a,_,_)->a)(textParse [] refs xs) ) ) ast), Map.union reference refs)) $ parse rest
+               in   maybe Nothing (\(ast, refs) -> Just $ ((addP (P  (tokens )) ast), Map.union reference refs)) $ parse rest
                
 textParse :: [AST]->References->[MDToken]->([AST],References,[MDToken])
 -- Hilfsfunktion, für das Parsen von Zeilen.
