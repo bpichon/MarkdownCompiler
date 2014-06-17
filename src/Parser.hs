@@ -60,7 +60,13 @@ textParse text refs (T_OpenArrow: T_Text address: T_CloseArrow: xs)= textParse (
 
 textParse text refs (T_OpenSqu: T_Text title: T_CloseSqu: T_OpenSqu: T_Text referenceFirst:  T_CloseSqu: xs) = textParse (text++[REF2 title referenceFirst]) refs  xs
 
+textParse text refs (T_Exclam: T_OpenSqu: T_Text title: T_CloseSqu: T_OpenSqu: T_Text referenceFirst:  T_CloseSqu: xs) = textParse (text++[IMG2 title referenceFirst]) refs  xs
+
 textParse text refs (T_OpenSqu: T_Text title: T_CloseSqu: T_DoublePoint: T_Text address: T_DoublePoint:T_Text address2: xs) =
+    let references = Map.insert title (address++":"++address2) refs -- Zur Map hinzufügen
+    in  textParse text references xs
+
+textParse text refs (T_Exclam:T_OpenSqu: T_Text title: T_CloseSqu: T_DoublePoint: T_Text address: T_DoublePoint:T_Text address2: xs) =
     let references = Map.insert title (address++":"++address2) refs -- Zur Map hinzufügen
     in  textParse text references xs
 

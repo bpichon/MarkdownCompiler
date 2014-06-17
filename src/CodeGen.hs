@@ -36,7 +36,10 @@ generateHTML' ((REF2 title url),r) =  let mx = Map.lookup url r
                                      in  case mx of
                                      Just a -> "<a href=\""++a++"\">"++title++"</a>"      
                                      Nothing -> "<a href=\""++show r++"\">"++title++"</a>"
-
+generateHTML' ((IMG2 alt url),r) =  let mx = Map.lookup url r                                         
+                                     in  case mx of
+                                     Just a -> "<img src=\""++a++"\" alt="++alt++" />"
+                                     Nothing -> "<img src=\""++url++"\" alt="++alt++" />"
 -- <a href="http://search.yahoo.com/" title="Yahoo Search">Yahoo</a>
 
 generateHTML' ((IMG alt url),_) = "<img src=\""++url++"\" alt="++alt++" />"
