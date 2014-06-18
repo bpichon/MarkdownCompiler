@@ -61,7 +61,7 @@ textParse text refs (T_OpenArrow: T_Text address: T_CloseArrow: xs)= textParse (
 textParse text refs (T_OpenSqu: T_Text title: T_CloseSqu: T_OpenSqu: T_Text referenceFirst:  T_CloseSqu: xs) = textParse (text++[REF2 title referenceFirst]) refs  xs
 
 textParse text refs (T_Exclam: T_OpenSqu: T_Text title: T_CloseSqu: T_OpenSqu: T_Text referenceFirst:  T_CloseSqu: xs) = textParse (text++[IMG2 title referenceFirst]) refs  xs
-
+-- inline Referenz, Muss zur Map aller referenzen hinzugefügt werden.
 textParse text refs (T_OpenSqu: T_Text title: T_CloseSqu: T_DoublePoint: T_Text address: T_DoublePoint:T_Text address2: xs) =
     let references = Map.insert title (address++":"++address2) refs -- Zur Map hinzufügen
     in  textParse text references xs
@@ -130,7 +130,7 @@ addOLI content (Sequence (ul@(UL listLevel lis@(levl)) : ast)) itemLevel
     | itemLevel > listLevel    = Sequence (OL listLevel ((OL itemLevel [(LI content)]):lis):ast)  -- neue Liste (mit neuem Item) in die Liste
 addOLI content (Sequence ast)  itemLevel=  Sequence ((OL itemLevel [(LI content)]):ast)
 
---Hilfsfunktion die Inline Code parsed. Wird aufgerufen wenn InlineCode von 2 oder mehr Backquotes umgeben ist.
+--Hilfsfunktion die Inline Code parsed. Wird aufgerufen wenn InlineCode von 2 oder mehr Backquotes umgeben ist. Ersetzt eine geringere Anzahl Backqoutes in einem InlineCodeblock durch Text
 
 codeParse :: [MDToken] -> [MDToken]->Int->Int->([MDToken],[MDToken])
 codeParse code (T_BackQuote:xs) 0 origcount = (code,xs)

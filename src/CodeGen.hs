@@ -17,7 +17,7 @@ generateHTML' ((Sequence (a:as)),r) = generateHTML' (a,r) ++ "\n" ++ generateHTM
 -- eine Überschrift
 generateHTML' ((H i str),_) = "<h" ++ show i ++ ">" ++ str ++ "</h" ++ show i ++ ">\n"
 -- eine ungeordnete Liste
-generateHTML' ((UL level lis),r) = "<ul>\n" ++ (listGen lis r)++ "</ul>\n"
+generateHTML' ((UL level lis),r) = "<ul>\n" ++ listGen lis r++ "</ul>\n"
 -- eine geordnete Liste
 generateHTML' ((OL level lis),r) = "<ol>\n" ++ listGen lis r++ "</ol>\n"
 
@@ -45,6 +45,6 @@ generateHTML' ((IMG2 alt url),r) =  let mx = Map.lookup url r
 generateHTML' ((IMG alt url),_) = "<img src=\""++url++"\" alt="++alt++" />"
 generateHTML' ((CODE code),_) = "<code>"++ code ++"</code>"
 generateHTML' (_,_) = ""
-
+ -- wendet generateHTML auf jedes element der Liste an 
 listGen [] rs = ""
 listGen (elem:xs) rs= generateHTML' (elem,rs)++ listGen xs rs
